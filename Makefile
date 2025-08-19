@@ -4,7 +4,7 @@ APP_NAME=shorty
 CMD_PATH=cmd/server
 GO_FILES=$(shell find . -name '*.go' -not -path "./vendor/*")
 
-.PHONY: build run test lint fmt tidy docker docker-run clean
+.PHONY: build run test fmt tidy docker docker-run clean
 
 build:
 	go build -o bin/$(APP_NAME) ./$(CMD_PATH)
@@ -14,9 +14,6 @@ run:
 
 test:
 	go test ./...
-
-lint:
-	golangci-lint run
 
 fmt:
 	go fmt ./...
