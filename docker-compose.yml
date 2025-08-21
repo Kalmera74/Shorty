@@ -9,23 +9,23 @@ services:
     env_file:
       - .env
     depends_on:
-      - mongodb
+      - postgres
       - redis
       - rabbitmq
     restart: unless-stopped
 
-  mongodb:
-    image: docker.io/library/mongo:7.0
-    container_name: shorty_mongo
+  postgres:
+    image: postgres:16-alpine
+    container_name: shorty_postgres
     ports:
-      - "27017:27017"
+      - "5432:5432"
     volumes:
-      - mongodata:/data/db
-    restart: unless-stopped
+      - pgdata:/var/lib/postgresql/data
     environment:
-      MONGO_INITDB_ROOT_USERNAME: mongo_user
-      MONGO_INITDB_ROOT_PASSWORD: mongo_pass
-      MONGO_INITDB_DATABASE: shorty_db
+      POSTGRES_USER: postgres_user
+      POSTGRES_PASSWORD: postgres_pass
+      POSTGRES_DB: shorty_db
+    restart: unless-stopped
 
   redis:
     image: docker.io/library/redis:7-alpine
@@ -46,5 +46,5 @@ services:
     restart: unless-stopped
 
 volumes:
-  mongodata:
+  pgdata:
 

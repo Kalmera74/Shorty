@@ -1,7 +1,7 @@
 # Makefile for Shorty
 
 APP_NAME=shorty
-CMD_PATH=cmd/server
+CMD_PATH=cmd/shorty
 GO_FILES=$(shell find . -name '*.go' -not -path "./vendor/*")
 
 .PHONY: build run test fmt tidy docker docker-run clean
