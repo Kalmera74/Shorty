@@ -1,14 +1,14 @@
 package user
 
 type UserError struct {
-	msg string
-	err error
+	Msg string
+	Err error
 }
 
 func (e *UserError) Error() string {
-	return e.msg
+	return e.Msg
 }
 
 func (e *UserError) Unwrap() error {
-	return e.err
+	return e.Err
 }

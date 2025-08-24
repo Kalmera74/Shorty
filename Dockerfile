@@ -1,6 +1,6 @@
 # Dockerfile for Shorty
 
-FROM golang:1.21-alpine
+FROM golang:1.23-alpine
 
 # Set working directory
 WORKDIR /app
@@ -16,7 +16,7 @@ RUN go mod download
 COPY . .
 
 # Build the Go app
-RUN go build -o shorty ./cmd/server
+RUN go build -o shorty ./cmd/shorty
 
 # Expose service port (update if needed)
 EXPOSE 8080

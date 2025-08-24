@@ -1,9 +1,10 @@
-package stores
+package db
 
 import (
 	"fmt"
 	"os"
 
+	"github.com/Kalmera74/Shorty/internal/user"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -28,3 +29,15 @@ func ConnectDB() (*gorm.DB, error) {
 	return db, nil
 }
 
+func AutoMigrate(dbConn *gorm.DB) error {
+	models := []interface{}{
+		&user.UserModel{},
+	}
+
+	for _, model := range models {
+		if err := dbConn.AutoMigrate(model); err != nil {
+			return fmt.Errorf("failed to auto-migrate model: %v", err)
+		}
+	}
+	return nil
+}

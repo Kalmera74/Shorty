@@ -1,13 +1,15 @@
 package user
 
-type UserCreate struct {
+type UserCreateRequest struct {
 	UserName string
 	Email    string
 }
-
-type User struct {
+type UserUpdateRequest struct {
+	UserName string
+	Email    string
+}
+type UserResponse struct {
 	Id       uint
 	UserName string
-	Email string
+	Email    string
 }
-
