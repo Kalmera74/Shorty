@@ -41,6 +41,27 @@ func (s *UserService) GetUser(id uint) (UserResponse, error) {
 	}, nil
 }
 
+func (s *UserService) CreateUser(req UserCreateRequest) (UserResponse, error) {
+	newUser := UserModel{
+		UserName: req.UserName,
+		Email:    req.Email,
+	}
+
+	createdUser, err := s.UserStore.Add(newUser)
+	if err != nil {
+		return UserResponse{}, &UserError{
+			Msg: fmt.Sprintf("Could not create user. Reason: %v", err.Error()),
+			Err: err,
+		}
+	}
+
+	return UserResponse{
+		Id:       createdUser.ID,
+		UserName: createdUser.UserName,
+		Email:    createdUser.Email,
+	}, nil
+}
+
 func (s *UserService) UpdateUser(id uint, req UserUpdateRequest) error {
 
 	userModel, err := s.UserStore.Get(id)

@@ -43,6 +43,16 @@ func (s *PostgresUserStore) Get(id uint) (user.UserModel, error) {
 	return u, nil
 }
 
+func (s *PostgresUserStore) Add(u user.UserModel) (user.UserModel, error) {
+	result := s.db.Create(&u)
+
+	if result.Error != nil {
+		return user.UserModel{}, result.Error
+	}
+
+	return u, nil
+}
+
 func (s *PostgresUserStore) Update(id uint, req user.UserModel) error {
 	var existingUser user.UserModel
 

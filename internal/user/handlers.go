@@ -42,6 +42,25 @@ func (h *UserHandler) GetUser(c *fiber.Ctx) error {
 	return c.JSON(userResp)
 }
 
+func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
+	var createReq UserCreateRequest
+	if err := c.BodyParser(&createReq); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	createdUser, err := h.service.CreateUser(createReq)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(createdUser)
+}
+
+
 func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 	idParam := c.Params("id")
 	id, err := strconv.Atoi(idParam)
