@@ -1,7 +1,9 @@
 package user
 
 import (
+	"fmt"
 	"strconv"
+
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -50,6 +52,7 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 		})
 	}
 
+	fmt.Printf("Create User Request: %v", createReq)
 	createdUser, err := h.service.CreateUser(createReq)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -59,7 +62,6 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusCreated).JSON(createdUser)
 }
-
 
 func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 	idParam := c.Params("id")

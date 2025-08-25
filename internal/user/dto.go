@@ -1,15 +1,17 @@
 package user
 
 type UserCreateRequest struct {
-	UserName string
-	Email    string
+	UserName string `json:"user_name"`
+	Email    string `json:"email"`
 }
+
 type UserUpdateRequest struct {
-	UserName string
-	Email    string
+	UserName string `json:"user_name"`
+	Email    string `json:"email"`
 }
+
 type UserResponse struct {
-	Id       uint
-	UserName string
-	Email    string
+	Id       uint   `json:"id"`
+	UserName string `json:"user_name"`
+	Email    string `json:"email"`
 }

@@ -5,9 +5,9 @@ import (
 	"os"
 
 	"github.com/Kalmera74/Shorty/db"
-	"github.com/Kalmera74/Shorty/internal/user"
-	"github.com/Kalmera74/Shorty/internal/user/stores"
+	"github.com/Kalmera74/Shorty/di"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
 func main() {
@@ -20,13 +20,12 @@ func main() {
 		log.Fatalf("Failed to perform migrations: %v", err)
 	}
 
-	userStore := stores.NewPostgresUserStore(dbConn)
-	userService := user.NewUserService(userStore)
-	userHandler := user.NewUserHandler(userService)
-
 	app := fiber.New()
+	app.Use(logger.New(logger.Config{
+		Format: "[${ip}]:${port} ${status} - ${method} ${path}\n",
+	}))
 
-	user.RegisterRoutes(app, userHandler)
+	di.SetupUser(app, dbConn)
 
 	port := os.Getenv("PORT")
 	if port == "" {

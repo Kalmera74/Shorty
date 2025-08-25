@@ -8,8 +8,8 @@ func RegisterRoutes(app *fiber.App, handler *UserHandler) {
 	users := app.Group("/users")
 
 	users.Get("/", handler.GetAllUsers)
+	users.Post("/", handler.CreateUser)
 	users.Get("/:id", handler.GetUser)
-	users.Post("/",handler.CreateUser)
 	users.Put("/:id", handler.UpdateUser)
 	users.Delete("/:id", handler.DeleteUser)
 }
