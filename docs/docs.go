@@ -18,6 +18,193 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/shorten": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Shortener"
+                ],
+                "summary": "Get all URLs in the system",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/shortener.ShortenModel"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No URLs found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Shortens the given long URL. User must be logged in.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Shortener"
+                ],
+                "summary": "Shorten a URL for a logged-in user",
+                "parameters": [
+                    {
+                        "description": "Shorten URL request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/shortener.ShortenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/shortener.ShortenResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/shorten/user/{userID}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Shortener"
+                ],
+                "summary": "Get all URLs for a user",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "userID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/shortener.ShortenModel"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No URLs found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/shorten/{shortID}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Shortener"
+                ],
+                "summary": "Get a URL by its short ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Short URL ID",
+                        "name": "shortID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/shortener.ShortenModel"
+                        }
+                    },
+                    "404": {
+                        "description": "URL not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Shortener"
+                ],
+                "summary": "Delete a URL by its short ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Short URL ID",
+                        "name": "shortID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "404": {
+                        "description": "URL not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/users": {
             "get": {
                 "description": "Get all registered users",
@@ -242,6 +429,42 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "shortener.ShortenModel": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "longURL": {
+                    "type": "string"
+                },
+                "shortID": {
+                    "type": "string"
+                },
+                "userID": {
+                    "type": "integer"
+                }
+            }
+        },
+        "shortener.ShortenRequest": {
+            "type": "object",
+            "properties": {
+                "long_url": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "shortener.ShortenResponse": {
+            "type": "object",
+            "properties": {
+                "short_url": {
+                    "type": "string"
+                }
+            }
+        },
         "user.UserCreateRequest": {
             "type": "object",
             "properties": {

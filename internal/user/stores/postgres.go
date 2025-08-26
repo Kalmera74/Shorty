@@ -11,7 +11,7 @@ type PostgresUserStore struct {
 	db *gorm.DB
 }
 
-func NewPostgresUserStore(db *gorm.DB) *PostgresUserStore {
+func NewUserPostgresStore(db *gorm.DB) *PostgresUserStore {
 	return &PostgresUserStore{db}
 }
 

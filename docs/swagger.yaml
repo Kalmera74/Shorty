@@ -1,5 +1,28 @@
 basePath: /
 definitions:
+  shortener.ShortenModel:
+    properties:
+      id:
+        type: integer
+      longURL:
+        type: string
+      shortID:
+        type: string
+      userID:
+        type: integer
+    type: object
+  shortener.ShortenRequest:
+    properties:
+      long_url:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  shortener.ShortenResponse:
+    properties:
+      short_url:
+        type: string
+    type: object
   user.UserCreateRequest:
     properties:
       email:
@@ -32,6 +55,128 @@ info:
   title: Shorty API
   version: "1.0"
 paths:
+  /shorten:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/shortener.ShortenModel'
+            type: array
+        "404":
+          description: No URLs found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get all URLs in the system
+      tags:
+      - Shortener
+    post:
+      consumes:
+      - application/json
+      description: Shortens the given long URL. User must be logged in.
+      parameters:
+      - description: Shorten URL request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/shortener.ShortenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/shortener.ShortenResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Shorten a URL for a logged-in user
+      tags:
+      - Shortener
+  /shorten/{shortID}:
+    delete:
+      parameters:
+      - description: Short URL ID
+        in: path
+        name: shortID
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: URL not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete a URL by its short ID
+      tags:
+      - Shortener
+    get:
+      parameters:
+      - description: Short URL ID
+        in: path
+        name: shortID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/shortener.ShortenModel'
+        "404":
+          description: URL not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get a URL by its short ID
+      tags:
+      - Shortener
+  /shorten/user/{userID}:
+    get:
+      parameters:
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/shortener.ShortenModel'
+            type: array
+        "404":
+          description: No URLs found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get all URLs for a user
+      tags:
+      - Shortener
   /users:
     get:
       description: Get all registered users

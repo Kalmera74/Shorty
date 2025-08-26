@@ -1,4 +1,4 @@
-package user
+package di
 
 import (
 	"github.com/Kalmera74/Shorty/internal/user"
@@ -8,7 +8,7 @@ import (
 )
 
 func SetupUser(app *fiber.App, dbConn *gorm.DB) {
-	userStore := stores.NewPostgresUserStore(dbConn)
+	userStore := stores.NewUserPostgresStore(dbConn)
 	userService := user.NewUserService(userStore)
 	userHandler := user.NewUserHandler(userService)
 
