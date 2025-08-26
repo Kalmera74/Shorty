@@ -4,13 +4,28 @@ import (
 	"log"
 	"os"
 
+	"github.com/Kalmera74/Shorty/cmd/shorty/di/user"
 	"github.com/Kalmera74/Shorty/db"
-	"github.com/Kalmera74/Shorty/di"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/joho/godotenv"
+
+	_ "github.com/Kalmera74/Shorty/docs"
+	"github.com/gofiber/swagger"
 )
 
+// @title Shorty API
+// @version 1.0
+// @description REST API for Shorty URL shortener
+// @license.name MIT
+// @host localhost:8080
+// @BasePath /
 func main() {
+
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, using system environment variables")
+	}
+
 	dbConn, err := db.ConnectDB()
 	if err != nil {
 		log.Fatalf("Failed to connect to the database: %v", err)
@@ -25,8 +40,9 @@ func main() {
 		Format: "[${ip}]:${port} ${status} - ${method} ${path}\n",
 	}))
 
-	di.SetupUser(app, dbConn)
+	app.Get("/swagger/*", swagger.HandlerDefault)
 
+	user.SetupUser(app, dbConn)
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"

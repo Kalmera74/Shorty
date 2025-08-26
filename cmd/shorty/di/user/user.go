@@ -1,4 +1,4 @@
-package di
+package user
 
 import (
 	"github.com/Kalmera74/Shorty/internal/user"
