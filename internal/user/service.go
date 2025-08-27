@@ -1,6 +1,11 @@
 package user
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+
+	"github.com/Kalmera74/Shorty/validation"
+)
 
 type UserService struct {
 	UserStore UserStore
@@ -29,8 +34,16 @@ func (s *UserService) GetAllUsers() ([]UserResponse, error) {
 }
 
 func (s *UserService) GetUser(id uint) (UserResponse, error) {
+
+	if err := validation.IsValidID(id); err != nil {
+		return UserResponse{}, err
+	}
+
 	userModel, err := s.UserStore.Get(id)
 	if err != nil {
+		if errors.Is(err, &UserNotFoundError{}) {
+			return UserResponse{}, err
+		}
 		return UserResponse{}, &UserError{Msg: fmt.Sprintf("Could not retrieve user %d. Reason: %v", id, err.Error()), Err: err}
 	}
 
@@ -42,6 +55,11 @@ func (s *UserService) GetUser(id uint) (UserResponse, error) {
 }
 
 func (s *UserService) CreateUser(req UserCreateRequest) (UserResponse, error) {
+
+	if err := req.Validate(); err != nil {
+		return UserResponse{}, err
+	}
+
 	newUser := UserModel{
 		UserName: req.UserName,
 		Email:    req.Email,
@@ -63,6 +81,10 @@ func (s *UserService) CreateUser(req UserCreateRequest) (UserResponse, error) {
 }
 
 func (s *UserService) UpdateUser(id uint, req UserUpdateRequest) error {
+
+	if err := req.Validate(); err != nil {
+		return err
+	}
 
 	userModel, err := s.UserStore.Get(id)
 	if err != nil {
@@ -91,6 +113,10 @@ func (s *UserService) UpdateUser(id uint, req UserUpdateRequest) error {
 }
 
 func (s *UserService) DeleteUser(id uint) error {
+
+	if err := validation.IsValidID(id); err != nil {
+		return err
+	}
 	err := s.UserStore.Delete(id)
 	if err != nil {
 		return &UserError{Msg: fmt.Sprintf("Could not delete user %d. Reason: %v", id, err.Error()), Err: err}

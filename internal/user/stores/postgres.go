@@ -23,7 +23,7 @@ func (s *PostgresUserStore) GetAll() ([]user.UserModel, error) {
 		return nil, result.Error
 	}
 	if len(users) == 0 {
-		return nil, &user.UserError{Msg: "No user was found", Err: nil}
+		return nil, &user.UserNotFoundError{Msg: "No user was found", Err: nil}
 	}
 
 	return users, nil
@@ -34,7 +34,7 @@ func (s *PostgresUserStore) Get(id uint) (user.UserModel, error) {
 	result := s.db.First(&u, id)
 
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return user.UserModel{}, &user.UserError{Msg: "User not found", Err: result.Error}
+		return user.UserModel{}, &user.UserNotFoundError{Msg: "User not found", Err: result.Error}
 	}
 	if result.Error != nil {
 		return user.UserModel{}, result.Error
@@ -59,7 +59,7 @@ func (s *PostgresUserStore) Update(id uint, req user.UserModel) error {
 	result := s.db.First(&existingUser, id)
 
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return &user.UserError{Msg: "User not found", Err: result.Error}
+		return &user.UserNotFoundError{Msg: "User not found", Err: result.Error}
 	}
 	if result.Error != nil {
 		return result.Error
@@ -78,7 +78,7 @@ func (s *PostgresUserStore) Delete(id uint) error {
 	result := s.db.Delete(&user.UserModel{}, id)
 
 	if result.RowsAffected == 0 {
-		return &user.UserError{Msg: "User not found", Err: gorm.ErrRecordNotFound}
+		return &user.UserNotFoundError{Msg: "User not found", Err: gorm.ErrRecordNotFound}
 	}
 
 	return result.Error
