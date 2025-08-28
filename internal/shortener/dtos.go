@@ -11,6 +11,6 @@ type ShortenResponse struct {
 	ShortUrl    string `json:"short_url"`
 }
 
-type SearchRequest struct{
-	OriginalUrl string `json:"original_url"`
+type SearchRequest struct {
+	OriginalUrl *string `json:"original_url,omitempty"`
 }

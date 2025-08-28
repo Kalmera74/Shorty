@@ -18,40 +18,6 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/short/{url}": {
-            "get": {
-                "tags": [
-                    "Shortener"
-                ],
-                "summary": "Gets a shortened URL by its short URL",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Short URL ID",
-                        "name": "shortID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "301": {
-                        "description": "Redirects to the original URL",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "404": {
-                        "description": "URL not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/shorten": {
             "get": {
                 "produces": [
@@ -60,7 +26,7 @@ const docTemplate = `{
                 "tags": [
                     "Shortener"
                 ],
-                "summary": "Get all URLs in the system",
+                "summary": "Get all Shorts in the system",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -72,7 +38,7 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "No URLs found",
+                        "description": "No Shorts found",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -83,7 +49,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Shortens the given long URL. User must be logged in.",
+                "description": "Creates a new Short for the given long URL.",
                 "consumes": [
                     "application/json"
                 ],
@@ -93,7 +59,7 @@ const docTemplate = `{
                 "tags": [
                     "Shortener"
                 ],
-                "summary": "Shorten a URL for a logged-in user",
+                "summary": "Shorten a URL",
                 "parameters": [
                     {
                         "description": "Shorten URL request",
@@ -135,7 +101,7 @@ const docTemplate = `{
         },
         "/shorten/search": {
             "post": {
-                "description": "Looks up a short URL by providing its original, long URL.",
+                "description": "Looks up a Short by providing its original, long URL.",
                 "consumes": [
                     "application/json"
                 ],
@@ -145,7 +111,7 @@ const docTemplate = `{
                 "tags": [
                     "Shortener"
                 ],
-                "summary": "Get a shortened URL by its original URL",
+                "summary": "Search for a Short by its original URL",
                 "parameters": [
                     {
                         "description": "Original URL to look up",
@@ -153,7 +119,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/shortener.ShortenRequest"
+                            "$ref": "#/definitions/shortener.SearchRequest"
                         }
                     }
                 ],
@@ -174,7 +140,7 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "URL not found",
+                        "description": "Short not found",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -194,6 +160,43 @@ const docTemplate = `{
                 }
             }
         },
+        "/shorten/short/{url}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Shortener"
+                ],
+                "summary": "Gets a Short by its short URL",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Short URL string",
+                        "name": "url",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/shortener.ShortenResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Short not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/shorten/user/{id}": {
             "get": {
                 "produces": [
@@ -202,12 +205,12 @@ const docTemplate = `{
                 "tags": [
                     "Shortener"
                 ],
-                "summary": "Get all URLs for a user",
+                "summary": "Get all Shorts for a user",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "User ID",
-                        "name": "userID",
+                        "name": "id",
                         "in": "path",
                         "required": true
                     }
@@ -223,7 +226,7 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "No URLs found",
+                        "description": "No Shorts found",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -242,12 +245,12 @@ const docTemplate = `{
                 "tags": [
                     "Shortener"
                 ],
-                "summary": "Get a URL by its Id",
+                "summary": "Get a Short by its numeric ID",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Short URL ID",
-                        "name": "shortID",
+                        "description": "Short numeric ID",
+                        "name": "id",
                         "in": "path",
                         "required": true
                     }
@@ -260,7 +263,7 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "URL not found",
+                        "description": "Short not found",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -274,12 +277,12 @@ const docTemplate = `{
                 "tags": [
                     "Shortener"
                 ],
-                "summary": "Delete a URL by its short ID",
+                "summary": "Delete a Short by its numeric ID",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Short URL ID",
-                        "name": "shortID",
+                        "description": "Short numeric ID",
+                        "name": "id",
                         "in": "path",
                         "required": true
                     }
@@ -289,7 +292,7 @@ const docTemplate = `{
                         "description": "No Content"
                     },
                     "404": {
-                        "description": "URL not found",
+                        "description": "Short not found",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -531,8 +534,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Short URL ID",
-                        "name": "shortID",
+                        "description": "Short string ID",
+                        "name": "url",
                         "in": "path",
                         "required": true
                     }
@@ -545,7 +548,7 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "URL not found",
+                        "description": "Short not found",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -558,6 +561,14 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "shortener.SearchRequest": {
+            "type": "object",
+            "properties": {
+                "original_url": {
+                    "type": "string"
+                }
+            }
+        },
         "shortener.ShortenRequest": {
             "type": "object",
             "properties": {

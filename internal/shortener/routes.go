@@ -8,12 +8,14 @@ func RegisterRoutes(app *fiber.App, handler *URLHandler) {
 
 	short.Get("/", handler.GetAll)
 	short.Post("/", handler.Shorten)
-	short.Post("/search", handler.GetByOriginalUrl)
-	short.Get("/short/:url", handler.GetByShortUrl)
-	short.Get("/user/:id", handler.GetAllByUser)
-	short.Get("/:id", handler.GetById)
-	short.Delete("/:id", handler.Delete)
+	short.Post("/search", handler.Search)
 
-	app.Get("/:url", handler.RedirectToOriginalUrl)
+	short.Get("/short/:url{[a-zA-Z0-9]+}", handler.GetByShortUrl)
+
+	short.Get("/user/:id+", handler.GetAllByUser)
+	short.Get("/:id+", handler.GetById)
+	short.Delete("/:id+", handler.Delete)
+
+	app.Get("/:url{[a-zA-Z0-9]+}", handler.RedirectToOriginalUrl)
 
 }

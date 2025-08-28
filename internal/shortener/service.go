@@ -74,7 +74,6 @@ func (s *URLService) ShortenURL(req ShortenRequest) (ShortModel, error) {
 	return short, nil
 
 }
-
 func (s *URLService) GetById(id uint) (ShortModel, error) {
 	if err := validation.ValidateID(id); err != nil {
 		return ShortModel{}, err
@@ -91,7 +90,6 @@ func (s *URLService) GetById(id uint) (ShortModel, error) {
 	return short, nil
 
 }
-
 func (s *URLService) GetByShortUrl(shortUrl string) (ShortModel, error) {
 	if shortUrl == "" {
 		return ShortModel{}, &ShortenError{Msg: "Short url cannot be nil or empty"}
@@ -135,10 +133,27 @@ func (s *URLService) GetByLongUrl(originalUrl string) (ShortModel, error) {
 		}
 		return ShortModel{}, &ShortenError{Msg: fmt.Sprintf("Could not get the short with the original Url: %v Reason: %v", originalUrl, err.Error()), Err: err}
 	}
-
 	return url, nil
 }
+func (s *URLService) Search(req SearchRequest) (ShortModel, error) {
+	if req.OriginalUrl != nil {
 
+		if err := validation.ValidateUrl(*req.OriginalUrl); err != nil {
+			return ShortModel{}, err
+		}
+		url, err := s.store.GetByLongUrl(*req.OriginalUrl)
+		if err != nil {
+			if errors.Is(err, &ShortNotFoundError{}) {
+				return ShortModel{}, fmt.Errorf("short not found")
+			}
+			return ShortModel{}, fmt.Errorf("could not search for the short with original URL: %v. reason: %w", req.OriginalUrl, err)
+		}
+
+		return url, nil
+	}
+
+	return ShortModel{}, &ShortNotFoundError{Msg: "No Shorts was found with the given search criteria"}
+}
 func (s *URLService) GetAllByUser(userID uint) ([]ShortModel, error) {
 	if err := validation.ValidateID(userID); err != nil {
 		return nil, err
@@ -151,7 +166,6 @@ func (s *URLService) GetAllByUser(userID uint) ([]ShortModel, error) {
 
 	return shorts, nil
 }
-
 func (s *URLService) GetAllURLs() ([]ShortModel, error) {
 	allShorts, err := s.store.GetAll()
 	if err != nil {
@@ -159,7 +173,6 @@ func (s *URLService) GetAllURLs() ([]ShortModel, error) {
 	}
 	return allShorts, nil
 }
-
 func (s *URLService) DeleteURL(shortID uint) error {
 	if err := validation.ValidateID(shortID); err != nil {
 		return err
