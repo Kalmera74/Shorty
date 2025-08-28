@@ -27,7 +27,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/shortener.ShortenModel"
+                                "$ref": "#/definitions/shortener.ShortenResponse"
                             }
                         }
                     },
@@ -117,7 +117,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/shortener.ShortenModel"
+                                "$ref": "#/definitions/shortener.ShortenResponse"
                             }
                         }
                     },
@@ -155,7 +155,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/shortener.ShortenModel"
+                            "$ref": "#/definitions/shortener.ShortenResponse"
                         }
                     },
                     "404": {
@@ -423,27 +423,10 @@
         }
     },
     "definitions": {
-        "shortener.ShortenModel": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "longURL": {
-                    "type": "string"
-                },
-                "shortID": {
-                    "type": "string"
-                },
-                "userID": {
-                    "type": "integer"
-                }
-            }
-        },
         "shortener.ShortenRequest": {
             "type": "object",
             "properties": {
-                "long_url": {
+                "original_url": {
                     "type": "string"
                 },
                 "user_id": {
@@ -454,6 +437,12 @@
         "shortener.ShortenResponse": {
             "type": "object",
             "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "original_url": {
+                    "type": "string"
+                },
                 "short_url": {
                     "type": "string"
                 }

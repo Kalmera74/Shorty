@@ -33,7 +33,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/shortener.ShortenModel"
+                                "$ref": "#/definitions/shortener.ShortenResponse"
                             }
                         }
                     },
@@ -123,7 +123,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/shortener.ShortenModel"
+                                "$ref": "#/definitions/shortener.ShortenResponse"
                             }
                         }
                     },
@@ -161,7 +161,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/shortener.ShortenModel"
+                            "$ref": "#/definitions/shortener.ShortenResponse"
                         }
                     },
                     "404": {
@@ -429,27 +429,10 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "shortener.ShortenModel": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "longURL": {
-                    "type": "string"
-                },
-                "shortID": {
-                    "type": "string"
-                },
-                "userID": {
-                    "type": "integer"
-                }
-            }
-        },
         "shortener.ShortenRequest": {
             "type": "object",
             "properties": {
-                "long_url": {
+                "original_url": {
                     "type": "string"
                 },
                 "user_id": {
@@ -460,6 +443,12 @@ const docTemplate = `{
         "shortener.ShortenResponse": {
             "type": "object",
             "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "original_url": {
+                    "type": "string"
+                },
                 "short_url": {
                     "type": "string"
                 }

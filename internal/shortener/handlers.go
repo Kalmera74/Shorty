@@ -20,7 +20,7 @@ func NewURLHandler(service *URLService) *URLHandler {
 // @Summary Get all URLs in the system
 // @Tags Shortener
 // @Produce json
-// @Success 200 {array} ShortenModel
+// @Success 200 {array} ShortenResponse
 // @Failure 404 {object} map[string]string "No URLs found"
 // @Router /shorten [get]
 func (h *URLHandler) GetAll(c *fiber.Ctx) error {
@@ -68,7 +68,7 @@ func (h *URLHandler) Shorten(c *fiber.Ctx) error {
 // @Tags Shortener
 // @Produce json
 // @Param shortID path string true "Short URL ID"
-// @Success 200 {object} ShortenModel
+// @Success 200 {object} ShortenResponse
 // @Failure 404 {object} map[string]string "URL not found"
 // @Router /shorten/{shortID} [get]
 func (h *URLHandler) GetByShortID(c *fiber.Ctx) error {
@@ -85,7 +85,7 @@ func (h *URLHandler) GetByShortID(c *fiber.Ctx) error {
 // @Tags Shortener
 // @Produce json
 // @Param userID path int true "User ID"
-// @Success 200 {array} ShortenModel
+// @Success 200 {array} ShortenResponse
 // @Failure 404 {object} map[string]string "No URLs found"
 // @Router /shorten/user/{userID} [get]
 func (h *URLHandler) GetAllByUser(c *fiber.Ctx) error {
