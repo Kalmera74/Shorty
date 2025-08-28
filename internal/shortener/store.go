@@ -1,9 +1,16 @@
 package shortener
 
 type URLStore interface {
-	Create(url ShortenModel) (ShortenModel, error)
-	GetByShortID(shortID string) (ShortenModel, error)
-	GetAllByUser(userID uint) ([]ShortenModel, error)
-	GetAll() ([]ShortenModel, error)        
-	Delete(shortID string) error            
+	Create(short ShortModel) (ShortModel, error)
+
+	GetById(id uint) (ShortModel, error)
+
+	GetByShortUrl(shortUrl string) (ShortModel, error)
+	GetByLongUrl(originalUrl string) (ShortModel, error)
+
+	GetAllByUser(userID uint) ([]ShortModel, error)
+
+	GetAll() ([]ShortModel, error)
+
+	Delete(shortenID uint) error
 }

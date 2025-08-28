@@ -1,13 +1,23 @@
 package validation
 
 import (
-	"github.com/Kalmera74/Shorty/errors"
+	"net/url"
+
+	"github.com/Kalmera74/Shorty/apperrors"
 )
 
-func IsValidID(id uint) error {
+func ValidateID(id uint) error {
 	if id > 0 {
 		return nil
 	}
 
-	return &errors.InvalidIdError{Msg: "ID cannot be less then or equal to 0"}
+	return &apperrors.InvalidIdError{Msg: "ID cannot be less then or equal to 0"}
+}
+
+func ValidateUrl(URL string) error {
+	if _, err := url.Parse(URL); err != nil {
+		return &apperrors.InvalidUrlError{Msg: "Given Url is not a valid Url"}
+	}
+
+	return nil
 }

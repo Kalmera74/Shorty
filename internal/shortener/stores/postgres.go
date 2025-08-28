@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/Kalmera74/Shorty/internal/shortener"
+	"github.com/Kalmera74/Shorty/validation"
 	"gorm.io/gorm"
 )
 
@@ -16,51 +17,89 @@ func NewURLPostgresStore(db *gorm.DB) *PostgresURLStore {
 	return &PostgresURLStore{db: db}
 }
 
-func (s *PostgresURLStore) Create(url shortener.ShortenModel) (shortener.ShortenModel, error) {
-	if url.LongURL == "" || url.ShortID == "" {
-		return shortener.ShortenModel{}, errors.New("invalid URL data")
+func (s *PostgresURLStore) Create(short shortener.ShortModel) (shortener.ShortModel, error) {
+	if err := short.Validate(); err != nil {
+		return shortener.ShortModel{}, err
+
 	}
 
-	result := s.db.Create(&url)
+	result := s.db.Create(&short)
 	if result.Error != nil {
-		return shortener.ShortenModel{}, fmt.Errorf("failed to create URL: %w", result.Error)
+		return shortener.ShortModel{}, &shortener.ShortenError{Msg: fmt.Sprintf("Could not create shortened url. Reason: %v", result.Error.Error()), Err: result.Error}
 	}
+	return short, nil
+}
+
+func (s *PostgresURLStore) GetById(shortID uint) (shortener.ShortModel, error) {
+	var url shortener.ShortModel
+
+	result := s.db.First(&url, shortID)
+
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return shortener.ShortModel{}, &shortener.ShortNotFoundError{Msg: fmt.Sprintf("No short with the given Id: %v found", shortID)}
+	}
+
+	if result.Error != nil {
+		return shortener.ShortModel{}, result.Error
+	}
+
 	return url, nil
 }
 
-func (s *PostgresURLStore) GetByShortID(shortID string) (shortener.ShortenModel, error) {
-	if shortID == "" {
-		return shortener.ShortenModel{}, errors.New("short ID cannot be empty")
+func (s *PostgresURLStore) GetByShortUrl(shortUrl string) (shortener.ShortModel, error) {
+
+	if err := validation.ValidateUrl(shortUrl); err != nil {
+		return shortener.ShortModel{}, &shortener.ShortenError{Msg: fmt.Sprintf("Could not get the short with the short url: %v. Reason: %v", shortUrl, err.Error()), Err: err}
 	}
 
-	var url shortener.ShortenModel
-	result := s.db.Where("short_id = ?", shortID).First(&url)
+	var short shortener.ShortModel
+	result := s.db.Where("short_url = ?", shortUrl).First(&short)
 
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return shortener.ShortenModel{}, &shortener.URLNotFoundError{
+		return shortener.ShortModel{}, &shortener.ShortNotFoundError{
 			Msg: "URL not found",
 			Err: result.Error,
 		}
 	}
 	if result.Error != nil {
-		return shortener.ShortenModel{}, fmt.Errorf("failed to get URL by short ID: %w", result.Error)
+		return shortener.ShortModel{}, &shortener.ShortenError{Msg: fmt.Sprintf("Could not create shortened url. Reason: %v", result.Error.Error()), Err: result.Error}
 	}
-	return url, nil
+	return short, nil
+}
+func (s *PostgresURLStore) GetByLongUrl(originalUrl string) (shortener.ShortModel, error) {
+	if err := validation.ValidateUrl(originalUrl); err != nil {
+		return shortener.ShortModel{}, &shortener.ShortenError{Msg: fmt.Sprintf("Could not get the short with the Url: %v. Reason: %v", originalUrl, err.Error()), Err: err}
+	}
+
+	var short shortener.ShortModel
+	result := s.db.Where("original_url = ?", originalUrl).First(&short)
+
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return shortener.ShortModel{}, &shortener.ShortNotFoundError{
+			Msg: "URL not found",
+			Err: result.Error,
+		}
+	}
+	if result.Error != nil {
+		return shortener.ShortModel{}, &shortener.ShortenError{Msg: fmt.Sprintf("Could not create shortened url. Reason: %v", result.Error.Error()), Err: result.Error}
+	}
+	return short, nil
 }
 
-func (s *PostgresURLStore) GetAllByUser(userID uint) ([]shortener.ShortenModel, error) {
-	if userID == 0 {
-		return nil, errors.New("invalid user ID")
+func (s *PostgresURLStore) GetAllByUser(userID uint) ([]shortener.ShortModel, error) {
+	if err := validation.ValidateID(userID); err != nil {
+		return nil, &shortener.ShortenError{Msg: fmt.Sprintf("Could not get the shortened Urls by the user with the Id: %v. Reason: %v", userID, err.Error()), Err: err}
 	}
 
-	var urls []shortener.ShortenModel
+	var urls []shortener.ShortModel
 	result := s.db.Where("user_id = ?", userID).Find(&urls)
 
 	if result.Error != nil {
-		return nil, fmt.Errorf("failed to get URLs for user: %w", result.Error)
+
+		return nil, &shortener.ShortenError{Msg: fmt.Sprintf("Could not get the shortened Urls by the user with the Id: %v. Reason: %v", userID, result.Error.Error()), Err: result.Error}
 	}
 	if len(urls) == 0 {
-		return nil, &shortener.URLNotFoundError{
+		return nil, &shortener.ShortNotFoundError{
 			Msg: "No URLs found for this user",
 			Err: nil,
 		}
@@ -68,14 +107,14 @@ func (s *PostgresURLStore) GetAllByUser(userID uint) ([]shortener.ShortenModel, 
 	return urls, nil
 }
 
-func (s *PostgresURLStore) GetAll() ([]shortener.ShortenModel, error) {
-	var urls []shortener.ShortenModel
+func (s *PostgresURLStore) GetAll() ([]shortener.ShortModel, error) {
+	var urls []shortener.ShortModel
 	result := s.db.Find(&urls)
 	if result.Error != nil {
-		return nil, fmt.Errorf("failed to get all URLs: %w", result.Error)
+		return nil, &shortener.ShortenError{Msg: fmt.Sprintf("failed to get all URLs. Reason: %v", result.Error), Err: result.Error}
 	}
 	if len(urls) == 0 {
-		return nil, &shortener.URLNotFoundError{
+		return nil, &shortener.ShortNotFoundError{
 			Msg: "No URLs found",
 			Err: nil,
 		}
@@ -83,20 +122,20 @@ func (s *PostgresURLStore) GetAll() ([]shortener.ShortenModel, error) {
 	return urls, nil
 }
 
-func (s *PostgresURLStore) Delete(shortID string) error {
-	if shortID == "" {
-		return errors.New("short ID cannot be empty")
+func (s *PostgresURLStore) Delete(shortId uint) error {
+	if err := validation.ValidateID(shortId); err != nil {
+		return err
 	}
 
-	result := s.db.Where("short_id = ?", shortID).Delete(&shortener.ShortenModel{})
-	if result.RowsAffected == 0 {
-		return &shortener.URLNotFoundError{
-			Msg: "URL not found",
-			Err: gorm.ErrRecordNotFound,
-		}
-	}
+	result := s.db.Find(shortId).Delete(&shortener.ShortModel{})
+
 	if result.Error != nil {
-		return fmt.Errorf("failed to delete URL: %w", result.Error)
+		return &shortener.ShortenError{Msg: fmt.Sprintf("Failed to delete short with the Id: %v. Reason: %v", shortId, result.Error.Error()), Err: result.Error}
 	}
+
+	if result.RowsAffected == 0 {
+		return &shortener.ShortNotFoundError{Msg: fmt.Sprintf("No short is found with the given Id: %v", shortId), Err: gorm.ErrRecordNotFound}
+	}
+
 	return nil
 }

@@ -1,9 +1,11 @@
 package shortener
 
 import (
+	"errors"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
+	"gorm.io/gorm"
 )
 
 type URLHandler struct {
@@ -47,12 +49,18 @@ func (h *URLHandler) Shorten(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request"})
 	}
 
-	shortID, err := h.service.ShortenURL(req.UserID, req.LongURL)
+	short, err := h.service.ShortenURL(req)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	return c.JSON(ShortenResponse{ShortURL: shortID})
+	responseObj := ShortenResponse{
+		ShortID:     short.ID,
+		OriginalUrl: short.OriginalUrl,
+		ShortUrl:    short.ShortUrl,
+	}
+
+	return c.JSON(responseObj)
 }
 
 // GetByShortID godoc
@@ -65,7 +73,7 @@ func (h *URLHandler) Shorten(c *fiber.Ctx) error {
 // @Router /shorten/{shortID} [get]
 func (h *URLHandler) GetByShortID(c *fiber.Ctx) error {
 	shortID := c.Params("shortID")
-	url, err := h.service.GetURLByShortID(shortID)
+	url, err := h.service.GetByShortUrl(shortID)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -87,7 +95,7 @@ func (h *URLHandler) GetAllByUser(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid user ID"})
 	}
 
-	urls, err := h.service.GetAllURLsByUser(uint(userID))
+	urls, err := h.service.GetAllByUser(uint(userID))
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -103,10 +111,28 @@ func (h *URLHandler) GetAllByUser(c *fiber.Ctx) error {
 // @Failure 404 {object} map[string]string "URL not found"
 // @Router /shorten/{shortID} [delete]
 func (h *URLHandler) Delete(c *fiber.Ctx) error {
-	shortID := c.Params("shortID")
-	err := h.service.DeleteURL(shortID)
+	shortIDParam := c.Params("shortID")
+
+	id, err := strconv.ParseUint(shortIDParam, 10, 64)
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid shortID provided. Must be a number.",
+		})
 	}
+
+	err = h.service.DeleteURL(uint(id))
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": err.Error(),
+			})
+		}
+
+		// For all other errors (e.g., database connection issues)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to delete URL due to a server error.",
+		})
+	}
+
 	return c.SendStatus(fiber.StatusNoContent)
 }

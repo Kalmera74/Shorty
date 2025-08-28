@@ -1,10 +1,12 @@
 package shortener
 
 type ShortenRequest struct {
-	UserID  uint   `json:"user_id"`
-	LongURL string `json:"long_url"`
+	UserID uint   `json:"user_id"`
+	Url    string `json:"original_url"`
 }
 
 type ShortenResponse struct {
-	ShortURL string `json:"short_url"`
+	ShortID     uint   `json:"id"`
+	OriginalUrl string `json:"original_url"`
+	ShortUrl    string `json:"short_url"`
 }

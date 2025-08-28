@@ -2,9 +2,9 @@ package shortener
 
 import "gorm.io/gorm"
 
-type ShortenModel struct {
+type ShortModel struct {
 	gorm.Model
-	UserID  uint   `gorm:"not null"`
-	LongURL string `gorm:"not null"`
-	ShortID string `gorm:"unique;not null"`
+	UserID      uint   `gorm:"not null"`
+	OriginalUrl string `gorm:"not null"`
+	ShortUrl    string `gorm:"unique;not null"`
 }

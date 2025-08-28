@@ -35,7 +35,7 @@ func (s *UserService) GetAllUsers() ([]UserResponse, error) {
 
 func (s *UserService) GetUser(id uint) (UserResponse, error) {
 
-	if err := validation.IsValidID(id); err != nil {
+	if err := validation.ValidateID(id); err != nil {
 		return UserResponse{}, err
 	}
 
@@ -114,7 +114,7 @@ func (s *UserService) UpdateUser(id uint, req UserUpdateRequest) error {
 
 func (s *UserService) DeleteUser(id uint) error {
 
-	if err := validation.IsValidID(id); err != nil {
+	if err := validation.ValidateID(id); err != nil {
 		return err
 	}
 	err := s.UserStore.Delete(id)

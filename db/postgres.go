@@ -33,7 +33,7 @@ func ConnectDB() (*gorm.DB, error) {
 func AutoMigrate(dbConn *gorm.DB) error {
 	models := []interface{}{
 		&user.UserModel{},
-		&shortener.ShortenModel{},
+		&shortener.ShortModel{},
 	}
 
 	for _, model := range models {

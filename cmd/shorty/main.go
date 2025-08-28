@@ -6,6 +6,7 @@ import (
 
 	"github.com/Kalmera74/Shorty/cmd/shorty/di"
 	"github.com/Kalmera74/Shorty/db"
+	"github.com/Kalmera74/Shorty/pkgs/redis"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/joho/godotenv"
@@ -41,6 +42,8 @@ func main() {
 	}))
 
 	app.Get("/swagger/*", swagger.HandlerDefault)
+
+	redis.InitClient()
 
 	di.SetupUser(app, dbConn)
 	di.SetupShortener(app, dbConn)
