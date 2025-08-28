@@ -48,6 +48,50 @@ info:
   title: Shorty API
   version: "1.0"
 paths:
+  /{url}:
+    get:
+      parameters:
+      - description: Short URL ID
+        in: path
+        name: shortID
+        required: true
+        type: string
+      responses:
+        "301":
+          description: Redirects to the original URL
+          schema:
+            type: string
+        "404":
+          description: URL not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Redirect to the original URL
+      tags:
+      - Shortener
+  /short/{url}:
+    get:
+      parameters:
+      - description: Short URL ID
+        in: path
+        name: shortID
+        required: true
+        type: string
+      responses:
+        "301":
+          description: Redirects to the original URL
+          schema:
+            type: string
+        "404":
+          description: URL not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Gets a shortened URL by its short URL
+      tags:
+      - Shortener
   /shorten:
     get:
       produces:
@@ -101,7 +145,7 @@ paths:
       summary: Shorten a URL for a logged-in user
       tags:
       - Shortener
-  /shorten/{shortID}:
+  /shorten/{id}:
     delete:
       parameters:
       - description: Short URL ID
@@ -141,10 +185,50 @@ paths:
             additionalProperties:
               type: string
             type: object
-      summary: Get a URL by its short ID
+      summary: Get a URL by its Id
       tags:
       - Shortener
-  /shorten/user/{userID}:
+  /shorten/search:
+    post:
+      consumes:
+      - application/json
+      description: Looks up a short URL by providing its original, long URL.
+      parameters:
+      - description: Original URL to look up
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/shortener.ShortenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/shortener.ShortenResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: URL not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get a shortened URL by its original URL
+      tags:
+      - Shortener
+  /shorten/user/{id}:
     get:
       parameters:
       - description: User ID

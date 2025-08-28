@@ -18,6 +18,40 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/short/{url}": {
+            "get": {
+                "tags": [
+                    "Shortener"
+                ],
+                "summary": "Gets a shortened URL by its short URL",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Short URL ID",
+                        "name": "shortID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "301": {
+                        "description": "Redirects to the original URL",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "URL not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/shorten": {
             "get": {
                 "produces": [
@@ -99,7 +133,68 @@ const docTemplate = `{
                 }
             }
         },
-        "/shorten/user/{userID}": {
+        "/shorten/search": {
+            "post": {
+                "description": "Looks up a short URL by providing its original, long URL.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Shortener"
+                ],
+                "summary": "Get a shortened URL by its original URL",
+                "parameters": [
+                    {
+                        "description": "Original URL to look up",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/shortener.ShortenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/shortener.ShortenResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "URL not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/shorten/user/{id}": {
             "get": {
                 "produces": [
                     "application/json"
@@ -139,7 +234,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/shorten/{shortID}": {
+        "/shorten/{id}": {
             "get": {
                 "produces": [
                     "application/json"
@@ -147,7 +242,7 @@ const docTemplate = `{
                 "tags": [
                     "Shortener"
                 ],
-                "summary": "Get a URL by its short ID",
+                "summary": "Get a URL by its Id",
                 "parameters": [
                     {
                         "type": "string",
@@ -417,6 +512,40 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/{url}": {
+            "get": {
+                "tags": [
+                    "Shortener"
+                ],
+                "summary": "Redirect to the original URL",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Short URL ID",
+                        "name": "shortID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "301": {
+                        "description": "Redirects to the original URL",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "URL not found",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {

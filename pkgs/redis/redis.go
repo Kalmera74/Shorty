@@ -2,6 +2,7 @@ package redis
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -12,16 +13,17 @@ import (
 var Client *redis.Client
 
 func InitClient() {
-	redisAddr := os.Getenv("REDIS_ADDR")
-	redisPassword := os.Getenv("REDIS_PASSWORD")
+	redisHost := os.Getenv("REDIS_HOST")
+	redisPort := os.Getenv("REDIS_PORT")
 	redisDBStr := os.Getenv("REDIS_DB")
 
-	if redisAddr == "" {
+	redisAddr := fmt.Sprintf("%s:%s", redisHost, redisPort)
+
+	if redisHost == "" || redisPort == "" {
 		redisAddr = "localhost:6379"
+		log.Printf("REDIS_HOST or REDIS_PORT not set, defaulting to %s", redisAddr)
 	}
-	if redisPassword == "" {
-		redisPassword = ""
-	}
+
 	redisDB, err := strconv.Atoi(redisDBStr)
 	if err != nil {
 		log.Printf("Invalid Redis DB number, defaulting to 0: %v", err)
@@ -29,13 +31,12 @@ func InitClient() {
 	}
 
 	Client = redis.NewClient(&redis.Options{
-		Addr:     redisAddr,
-		Password: redisPassword,
-		DB:       redisDB,
+		Addr: redisAddr,
+		DB:   redisDB,
 	})
 
 	_, err = Client.Ping(context.Background()).Result()
 	if err != nil {
-		log.Fatalf("Could not connect to Redis: %v", err)
+		log.Fatalf("Could not connect to Redis at %s: %v", redisAddr, err)
 	}
 }

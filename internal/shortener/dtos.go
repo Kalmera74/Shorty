@@ -6,7 +6,11 @@ type ShortenRequest struct {
 }
 
 type ShortenResponse struct {
-	ShortID     uint   `json:"id"`
+	Id          uint   `json:"id"`
 	OriginalUrl string `json:"original_url"`
 	ShortUrl    string `json:"short_url"`
+}
+
+type SearchRequest struct{
+	OriginalUrl string `json:"original_url"`
 }

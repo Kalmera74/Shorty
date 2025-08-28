@@ -10,7 +10,9 @@ services:
       - .env
     depends_on:
       postgres:
-        condition: service_healthy # Wait until the postgres service is healthy
+        condition: service_healthy 
+      redis:
+        condition: service_healthy
     restart: unless-stopped
 
   postgres:
@@ -36,6 +38,12 @@ services:
     container_name: shorty_redis
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli","ping"]
+      interval: 1s
+      timeout: 3s
+      retries: 5
+      start_period: 30s
     restart: unless-stopped
 
   rabbitmq:
