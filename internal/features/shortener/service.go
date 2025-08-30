@@ -10,20 +10,19 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Kalmera74/Shorty/pkgs/redis"
 	"github.com/Kalmera74/Shorty/validation"
-
-	"github.com/go-redis/redis/v8"
 )
 
 type URLService struct {
-	store URLStore
-	redis *redis.Client
+	store  ShortStore
+	cacher redis.Cacher
 }
 
-func NewURLService(store URLStore, redis *redis.Client) *URLService {
+func NewShortService(store ShortStore, cacher redis.Cacher) *URLService {
 	return &URLService{
-		store: store,
-		redis: redis,
+		store:  store,
+		cacher: cacher,
 	}
 }
 
@@ -33,7 +32,7 @@ func (s *URLService) ShortenURL(req ShortenRequest) (ShortModel, error) {
 	}
 
 	ctx := context.Background()
-	cachedShortID, err := s.redis.Get(ctx, req.Url).Result()
+	cachedShortID, err := s.cacher.Get(ctx, req.Url)
 	if err == nil && cachedShortID != "" {
 		id, _ := strconv.ParseUint(cachedShortID, 10, 64)
 		existingShort, err := s.store.GetById(uint(id))
@@ -44,8 +43,8 @@ func (s *URLService) ShortenURL(req ShortenRequest) (ShortModel, error) {
 
 	existingShort, err := s.GetByLongUrl(req.Url)
 	if err == nil {
-		s.redis.Set(ctx, req.Url, existingShort.ID, time.Minute*5)
-		s.redis.Set(ctx, existingShort.ShortUrl, existingShort.OriginalUrl, time.Minute*5)
+		s.cacher.Set(ctx, req.Url, existingShort.ID, time.Minute*5)
+		s.cacher.Set(ctx, existingShort.ShortUrl, existingShort.OriginalUrl, time.Minute*5)
 		return existingShort, nil
 	}
 
@@ -65,10 +64,10 @@ func (s *URLService) ShortenURL(req ShortenRequest) (ShortModel, error) {
 		return ShortModel{}, &ShortenError{Msg: fmt.Sprintf("Could not create the shortened url. Reason: %v", err.Error()), Err: err}
 	}
 
-	s.redis.Set(ctx, req.Url, short.ID, 0)
+	s.cacher.Set(ctx, req.Url, short.ID, time.Minute*5)
 	marshalledShort, err := json.Marshal(short)
 	if err == nil {
-		s.redis.Set(ctx, short.ShortUrl, marshalledShort, time.Minute*5)
+		s.cacher.Set(ctx, short.ShortUrl, marshalledShort, time.Minute*5)
 	}
 
 	return short, nil
@@ -85,7 +84,7 @@ func (s *URLService) GetById(id uint) (ShortModel, error) {
 	}
 
 	ctx := context.Background()
-	s.redis.Set(ctx, short.OriginalUrl, short.ID, time.Minute*5)
+	s.cacher.Set(ctx, short.OriginalUrl, short.ID, time.Minute*5)
 
 	return short, nil
 
@@ -96,7 +95,7 @@ func (s *URLService) GetByShortUrl(shortUrl string) (ShortModel, error) {
 	}
 
 	ctx := context.Background()
-	cachedShort, err := s.redis.Get(ctx, shortUrl).Result()
+	cachedShort, err := s.cacher.Get(ctx, shortUrl)
 	if err == nil && cachedShort != "" {
 
 		unMarshalledShort := ShortModel{}
@@ -117,7 +116,7 @@ func (s *URLService) GetByShortUrl(shortUrl string) (ShortModel, error) {
 	marshalledShort, err := json.Marshal(short)
 	if err == nil {
 
-		s.redis.Set(ctx, shortUrl, marshalledShort, time.Minute*5)
+		s.cacher.Set(ctx, shortUrl, marshalledShort, time.Minute*5)
 	}
 	return short, nil
 }

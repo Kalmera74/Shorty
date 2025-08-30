@@ -1,6 +1,6 @@
 package shortener
 
-type URLStore interface {
+type ShortStore interface {
 	Create(short ShortModel) (ShortModel, error)
 
 	GetById(id uint) (ShortModel, error)

@@ -4,7 +4,7 @@ APP_NAME=shorty
 CMD_PATH=cmd/shorty
 GO_FILES=$(shell find . -name '*.go' -not -path "./vendor/*")
 
-.PHONY: build run test fmt tidy docker docker-run clean
+.PHONY: build run test fmt tidy vet docker docker-run clean api all
 
 build:
 	go build -o bin/$(APP_NAME) ./$(CMD_PATH)
@@ -16,17 +16,21 @@ test:
 	go test ./...
 
 fmt:
-	go fmt ./...
+	go fmt $(GO_FILES)
+
+vet:
+	go vet ./...
 
 tidy:
 	go mod tidy
 
 docker:
-	docker build -t $(APP_NAME):latest .
+	docker compose up
 
-docker-run:
-	docker run -p 8080:8080 --env-file .env $(APP_NAME):latest
+api:
+	swag init --dir ./cmd/shorty,./internal --output ./docs
+
+all: tidy fmt vet build test
 
 clean:
 	rm -rf bin/
-

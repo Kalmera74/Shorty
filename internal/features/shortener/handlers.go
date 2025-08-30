@@ -12,7 +12,7 @@ type URLHandler struct {
 	service *URLService
 }
 
-func NewURLHandler(service *URLService) *URLHandler {
+func NewShortHandler(service *URLService) *URLHandler {
 	return &URLHandler{service: service}
 }
 

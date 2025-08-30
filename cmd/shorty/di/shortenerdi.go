@@ -11,8 +11,8 @@ import (
 func SetupShortener(app *fiber.App, dbConn *gorm.DB) {
 
 	store := stores.NewURLPostgresStore(dbConn)
-	service := shortener.NewURLService(store, redis.Client)
-	handler := shortener.NewURLHandler(service)
+	service := shortener.NewShortService(store, redis.NewCacher(redis.Client))
+	handler := shortener.NewShortHandler(service)
 
 	shortener.RegisterRoutes(app, handler)
 }

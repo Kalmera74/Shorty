@@ -6,13 +6,37 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 )
 
 var Client *redis.Client
 
-func InitClient() {
+type Cacher interface {
+	Set(ctx context.Context, key string, value interface{}, expiration time.Duration) error
+	Get(ctx context.Context, key string) (string, error)
+}
+
+type RedisCacher struct {
+	Client redis.Cmdable
+}
+
+func NewCacher(redisClient redis.Cmdable) Cacher {
+	return &RedisCacher{
+		Client: redisClient,
+	}
+}
+
+func (r *RedisCacher) Set(ctx context.Context, key string, value interface{}, exp time.Duration) error {
+	return r.Client.Set(ctx, key, value, exp).Err()
+}
+
+func (r *RedisCacher) Get(ctx context.Context, key string) (string, error) {
+	get := r.Client.Get(ctx, key)
+	return get.Result()
+}
+func InitRedisClient() *redis.Client {
 	redisHost := os.Getenv("REDIS_HOST")
 	redisPort := os.Getenv("REDIS_PORT")
 	redisDBStr := os.Getenv("REDIS_DB")
@@ -39,4 +63,6 @@ func InitClient() {
 	if err != nil {
 		log.Fatalf("Could not connect to Redis at %s: %v", redisAddr, err)
 	}
+
+	return Client
 }

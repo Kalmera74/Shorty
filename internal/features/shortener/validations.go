@@ -1,6 +1,7 @@
 package shortener
 
 import (
+
 	"github.com/Kalmera74/Shorty/validation"
 )
 
@@ -29,6 +30,5 @@ func (s *ShortenRequest) Validate() error {
 	if err := validation.ValidateUrl(s.Url); err != nil {
 		return &InvalidShortenRequestError{Msg: "Given URL is not a valid url", Err: err}
 	}
-
 	return nil
 }
