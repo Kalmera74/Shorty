@@ -1,10 +1,19 @@
 package user
 
-import "gorm.io/gorm"
+import (
+	"time"
 
-type UserModel struct{
+	"github.com/Kalmera74/Shorty/internal/features/shortener"
+	"github.com/Kalmera74/Shorty/internal/types"
+	"gorm.io/gorm"
+)
 
-	gorm.Model
-	UserName string
-	Email string
+type UserModel struct {
+	ID        types.UserId `gorm:"primaryKey"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt         `gorm:"index"`
+	UserName  string                 `validate:"required,min=3,max=30"`
+	Email     string                 `validate:"required,email"`
+	Shorts    []shortener.ShortModel `validate:"dive"`
 }

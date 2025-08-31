@@ -4,15 +4,16 @@ import (
 	"errors"
 	"strconv"
 
+	"github.com/Kalmera74/Shorty/internal/types"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 )
 
 type URLHandler struct {
-	service *URLService
+	service IShortService
 }
 
-func NewShortHandler(service *URLService) *URLHandler {
+func NewShortHandler(service IShortService) *URLHandler {
 	return &URLHandler{service: service}
 }
 
@@ -33,7 +34,7 @@ func (h *URLHandler) GetAll(c *fiber.Ctx) error {
 
 	for _, shortModel := range shortModels {
 		shortResponses = append(shortResponses, ShortenResponse{
-			Id:          shortModel.ID,
+			Id:          uint(shortModel.ID),
 			OriginalUrl: shortModel.OriginalUrl,
 			ShortUrl:    shortModel.ShortUrl,
 		})
@@ -65,7 +66,7 @@ func (h *URLHandler) Shorten(c *fiber.Ctx) error {
 	}
 
 	responseObj := ShortenResponse{
-		Id:          short.ID,
+		Id:          uint(short.ID),
 		OriginalUrl: short.OriginalUrl,
 		ShortUrl:    short.ShortUrl,
 	}
@@ -87,12 +88,12 @@ func (h *URLHandler) GetById(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
-	shortModel, err := h.service.GetById(uint(id))
+	shortModel, err := h.service.GetById(types.ShortId(id))
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 	}
 	shortenResponse := ShortenResponse{
-		Id:          shortModel.ID,
+		Id:          uint(shortModel.ID),
 		OriginalUrl: shortModel.OriginalUrl,
 		ShortUrl:    shortModel.ShortUrl,
 	}
@@ -119,7 +120,7 @@ func (h *URLHandler) GetByShortUrl(c *fiber.Ctx) error {
 	}
 
 	shortenResponse := ShortenResponse{
-		Id:          shortModel.ID,
+		Id:          uint(shortModel.ID),
 		OriginalUrl: shortModel.OriginalUrl,
 		ShortUrl:    shortModel.ShortUrl,
 	}
@@ -154,7 +155,7 @@ func (h *URLHandler) Search(c *fiber.Ctx) error {
 	}
 
 	responseObj := ShortenResponse{
-		Id:          shortModel.ID,
+		Id:          uint(shortModel.ID),
 		OriginalUrl: shortModel.OriginalUrl,
 		ShortUrl:    shortModel.ShortUrl,
 	}
@@ -198,7 +199,7 @@ func (h *URLHandler) GetAllByUser(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid user ID"})
 	}
 
-	shortModels, err := h.service.GetAllByUser(uint(userID))
+	shortModels, err := h.service.GetAllByUser(types.UserId(userID))
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -207,7 +208,7 @@ func (h *URLHandler) GetAllByUser(c *fiber.Ctx) error {
 
 	for _, shortModel := range shortModels {
 		shortResponses = append(shortResponses, ShortenResponse{
-			Id:          shortModel.ID,
+			Id:          uint(shortModel.ID),
 			OriginalUrl: shortModel.OriginalUrl,
 			ShortUrl:    shortModel.ShortUrl,
 		})
@@ -233,7 +234,7 @@ func (h *URLHandler) Delete(c *fiber.Ctx) error {
 		})
 	}
 
-	err = h.service.DeleteURL(uint(id))
+	err = h.service.DeleteURL(types.ShortId(id))
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{

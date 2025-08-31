@@ -7,12 +7,13 @@ import (
 )
 
 type UserHandler struct {
-	service *UserService
+	service IUserService
 }
 
-func NewUserHandler(service *UserService) *UserHandler {
+func NewUserHandler(service IUserService) *UserHandler {
 	return &UserHandler{service: service}
 }
+
 // GetAllUsers godoc
 // @Summary List all users
 // @Description Get all registered users
@@ -30,6 +31,7 @@ func (h *UserHandler) GetAllUsers(c *fiber.Ctx) error {
 	}
 	return c.JSON(allUsers)
 }
+
 // CreateUser godoc
 // @Summary Create a new user
 // @Description Create user with username and email
@@ -87,6 +89,7 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusCreated).JSON(createdUser)
 }
+
 // UpdateUser godoc
 // @Summary Update a user
 // @Description Update username or email of a user

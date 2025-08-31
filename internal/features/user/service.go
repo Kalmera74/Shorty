@@ -4,18 +4,25 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/Kalmera74/Shorty/validation"
+	"github.com/Kalmera74/Shorty/internal/validation"
 )
 
-type UserService struct {
+type IUserService interface {
+	GetAllUsers() ([]UserResponse, error)
+	GetUser(id uint) (UserResponse, error)
+	CreateUser(req UserCreateRequest) (UserResponse, error)
+	UpdateUser(id uint, req UserUpdateRequest) error
+	DeleteUser(id uint) error
+}
+type userService struct {
 	UserStore UserStore
 }
 
-func NewUserService(s UserStore) *UserService {
-	return &UserService{s}
+func NewUserService(s UserStore) IUserService {
+	return &userService{s}
 }
 
-func (s *UserService) GetAllUsers() ([]UserResponse, error) {
+func (s *userService) GetAllUsers() ([]UserResponse, error) {
 	userModels, err := s.UserStore.GetAll()
 	if err != nil {
 		return nil, &UserError{Msg: fmt.Sprintf("Could not retrieve users. Reason: %v", err.Error()), Err: err}
@@ -24,7 +31,7 @@ func (s *UserService) GetAllUsers() ([]UserResponse, error) {
 	users := make([]UserResponse, 0, len(userModels))
 	for _, user := range userModels {
 		users = append(users, UserResponse{
-			Id:       user.ID,
+			Id:       uint(user.ID),
 			UserName: user.UserName,
 			Email:    user.Email,
 		})
@@ -32,8 +39,7 @@ func (s *UserService) GetAllUsers() ([]UserResponse, error) {
 
 	return users, nil
 }
-
-func (s *UserService) GetUser(id uint) (UserResponse, error) {
+func (s *userService) GetUser(id uint) (UserResponse, error) {
 
 	if err := validation.ValidateID(id); err != nil {
 		return UserResponse{}, err
@@ -48,17 +54,12 @@ func (s *UserService) GetUser(id uint) (UserResponse, error) {
 	}
 
 	return UserResponse{
-		Id:       userModel.ID,
+		Id:       uint(userModel.ID),
 		UserName: userModel.UserName,
 		Email:    userModel.Email,
 	}, nil
 }
-
-func (s *UserService) CreateUser(req UserCreateRequest) (UserResponse, error) {
-
-	if err := req.Validate(); err != nil {
-		return UserResponse{}, err
-	}
+func (s *userService) CreateUser(req UserCreateRequest) (UserResponse, error) {
 
 	newUser := UserModel{
 		UserName: req.UserName,
@@ -74,17 +75,12 @@ func (s *UserService) CreateUser(req UserCreateRequest) (UserResponse, error) {
 	}
 
 	return UserResponse{
-		Id:       createdUser.ID,
+		Id:       uint(createdUser.ID),
 		UserName: createdUser.UserName,
 		Email:    createdUser.Email,
 	}, nil
 }
-
-func (s *UserService) UpdateUser(id uint, req UserUpdateRequest) error {
-
-	if err := req.Validate(); err != nil {
-		return err
-	}
+func (s *userService) UpdateUser(id uint, req UserUpdateRequest) error {
 
 	userModel, err := s.UserStore.Get(id)
 	if err != nil {
@@ -94,11 +90,11 @@ func (s *UserService) UpdateUser(id uint, req UserUpdateRequest) error {
 		}
 	}
 
-	if req.UserName != "" {
-		userModel.UserName = req.UserName
+	if req.UserName != nil {
+		userModel.UserName = *req.UserName
 	}
-	if req.Email != "" {
-		userModel.Email = req.Email
+	if req.Email != nil {
+		userModel.Email = *req.Email
 	}
 
 	err = s.UserStore.Update(id, userModel)
@@ -111,8 +107,7 @@ func (s *UserService) UpdateUser(id uint, req UserUpdateRequest) error {
 
 	return nil
 }
-
-func (s *UserService) DeleteUser(id uint) error {
+func (s *userService) DeleteUser(id uint) error {
 
 	if err := validation.ValidateID(id); err != nil {
 		return err

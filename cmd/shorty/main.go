@@ -4,8 +4,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/Kalmera74/Shorty/cmd/shorty/di"
-	"github.com/Kalmera74/Shorty/pkg/db"
+	"github.com/Kalmera74/Shorty/internal/db"
+	"github.com/Kalmera74/Shorty/internal/features/shortener"
+	"github.com/Kalmera74/Shorty/internal/features/user"
 	"github.com/Kalmera74/Shorty/pkg/redis"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -45,8 +46,15 @@ func main() {
 
 	redis.InitRedisClient()
 
-	di.SetupUser(app, dbConn)
-	di.SetupShortener(app, dbConn)
+	store := shortener.NewShortRepository(dbConn)
+	service := shortener.NewShortService(store, redis.NewCacher(redis.Client))
+	handler := shortener.NewShortHandler(service)
+	shortener.RegisterRoutes(app, handler)
+
+	userStore := user.NewUserRepository(dbConn)
+	userService := user.NewUserService(userStore)
+	userHandler := user.NewUserHandler(userService)
+	user.RegisterRoutes(app, userHandler)
 
 	port := os.Getenv("PORT")
 	if port == "" {

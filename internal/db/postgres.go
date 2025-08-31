@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Kalmera74/Shorty/internal/shortener"
-	"github.com/Kalmera74/Shorty/internal/user"
+	"github.com/Kalmera74/Shorty/internal/features/shortener"
+	"github.com/Kalmera74/Shorty/internal/features/user"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )

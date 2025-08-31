@@ -1,10 +1,9 @@
 package shortener
 
 type ShortenRequest struct {
-	UserID uint   `json:"user_id"`
-	Url    string `json:"original_url"`
+	UserID uint   `json:"user_id" validate:"required,numeric,min=1"`
+	Url    string `json:"original_url" validate:"required,url"`
 }
-
 type ShortenResponse struct {
 	Id          uint   `json:"id"`
 	OriginalUrl string `json:"original_url"`
@@ -12,5 +11,5 @@ type ShortenResponse struct {
 }
 
 type SearchRequest struct {
-	OriginalUrl *string `json:"original_url,omitempty"`
+	OriginalUrl *string `json:"original_url,omitempty" validate:"omitempty,url"`
 }

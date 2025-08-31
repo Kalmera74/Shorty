@@ -11,6 +11,7 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
+// TODO: Would be better to be DI instead of global
 var Client *redis.Client
 
 type Cacher interface {

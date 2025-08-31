@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/Kalmera74/Shorty/internal/apperrors"
 )
 
 func ValidateID(id uint) error {

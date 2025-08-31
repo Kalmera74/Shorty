@@ -10,32 +10,40 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Kalmera74/Shorty/pkgs/redis"
-	"github.com/Kalmera74/Shorty/validation"
+	"github.com/Kalmera74/Shorty/internal/types"
+	"github.com/Kalmera74/Shorty/internal/validation"
+	"github.com/Kalmera74/Shorty/pkg/redis"
 )
 
-type URLService struct {
+type IShortService interface {
+	ShortenURL(req ShortenRequest) (ShortModel, error)
+	GetById(id types.ShortId) (ShortModel, error)
+	GetByShortUrl(shortUrl string) (ShortModel, error)
+	GetByLongUrl(originalUrl string) (ShortModel, error)
+	Search(req SearchRequest) (ShortModel, error)
+	GetAllByUser(userID types.UserId) ([]ShortModel, error)
+	GetAllURLs() ([]ShortModel, error)
+	DeleteURL(shortID types.ShortId) error
+}
+type shortService struct {
 	store  ShortStore
 	cacher redis.Cacher
 }
 
-func NewShortService(store ShortStore, cacher redis.Cacher) *URLService {
-	return &URLService{
+func NewShortService(store ShortStore, cacher redis.Cacher) IShortService {
+	return &shortService{
 		store:  store,
 		cacher: cacher,
 	}
 }
 
-func (s *URLService) ShortenURL(req ShortenRequest) (ShortModel, error) {
-	if err := req.Validate(); err != nil {
-		return ShortModel{}, err
-	}
+func (s *shortService) ShortenURL(req ShortenRequest) (ShortModel, error) {
 
 	ctx := context.Background()
 	cachedShortID, err := s.cacher.Get(ctx, req.Url)
 	if err == nil && cachedShortID != "" {
 		id, _ := strconv.ParseUint(cachedShortID, 10, 64)
-		existingShort, err := s.store.GetById(uint(id))
+		existingShort, err := s.store.GetById(types.ShortId(id))
 		if err == nil {
 			return existingShort, nil
 		}
@@ -53,7 +61,7 @@ func (s *URLService) ShortenURL(req ShortenRequest) (ShortModel, error) {
 	shortID := hex.EncodeToString(h.Sum(nil))[:8]
 
 	url := ShortModel{
-		UserID:      req.UserID,
+		UserID:      types.UserId(req.UserID),
 		OriginalUrl: req.Url,
 		ShortUrl:    shortID,
 	}
@@ -73,10 +81,7 @@ func (s *URLService) ShortenURL(req ShortenRequest) (ShortModel, error) {
 	return short, nil
 
 }
-func (s *URLService) GetById(id uint) (ShortModel, error) {
-	if err := validation.ValidateID(id); err != nil {
-		return ShortModel{}, err
-	}
+func (s *shortService) GetById(id types.ShortId) (ShortModel, error) {
 
 	short, err := s.store.GetById(id)
 	if err != nil {
@@ -89,7 +94,7 @@ func (s *URLService) GetById(id uint) (ShortModel, error) {
 	return short, nil
 
 }
-func (s *URLService) GetByShortUrl(shortUrl string) (ShortModel, error) {
+func (s *shortService) GetByShortUrl(shortUrl string) (ShortModel, error) {
 	if shortUrl == "" {
 		return ShortModel{}, &ShortenError{Msg: "Short url cannot be nil or empty"}
 	}
@@ -120,7 +125,7 @@ func (s *URLService) GetByShortUrl(shortUrl string) (ShortModel, error) {
 	}
 	return short, nil
 }
-func (s *URLService) GetByLongUrl(originalUrl string) (ShortModel, error) {
+func (s *shortService) GetByLongUrl(originalUrl string) (ShortModel, error) {
 	if err := validation.ValidateUrl(originalUrl); err != nil {
 		return ShortModel{}, err
 	}
@@ -134,7 +139,7 @@ func (s *URLService) GetByLongUrl(originalUrl string) (ShortModel, error) {
 	}
 	return url, nil
 }
-func (s *URLService) Search(req SearchRequest) (ShortModel, error) {
+func (s *shortService) Search(req SearchRequest) (ShortModel, error) {
 	if req.OriginalUrl != nil {
 
 		if err := validation.ValidateUrl(*req.OriginalUrl); err != nil {
@@ -153,10 +158,7 @@ func (s *URLService) Search(req SearchRequest) (ShortModel, error) {
 
 	return ShortModel{}, &ShortNotFoundError{Msg: "No Shorts was found with the given search criteria"}
 }
-func (s *URLService) GetAllByUser(userID uint) ([]ShortModel, error) {
-	if err := validation.ValidateID(userID); err != nil {
-		return nil, err
-	}
+func (s *shortService) GetAllByUser(userID types.UserId) ([]ShortModel, error) {
 
 	shorts, err := s.store.GetAllByUser(userID)
 	if err != nil {
@@ -165,17 +167,14 @@ func (s *URLService) GetAllByUser(userID uint) ([]ShortModel, error) {
 
 	return shorts, nil
 }
-func (s *URLService) GetAllURLs() ([]ShortModel, error) {
+func (s *shortService) GetAllURLs() ([]ShortModel, error) {
 	allShorts, err := s.store.GetAll()
 	if err != nil {
 		return nil, err
 	}
 	return allShorts, nil
 }
-func (s *URLService) DeleteURL(shortID uint) error {
-	if err := validation.ValidateID(shortID); err != nil {
-		return err
-	}
+func (s *shortService) DeleteURL(shortID types.ShortId) error {
 
 	if err := s.store.Delete(shortID); err != nil {
 		return err
