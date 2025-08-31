@@ -15,5 +15,5 @@ type UserModel struct {
 	DeletedAt gorm.DeletedAt         `gorm:"index"`
 	UserName  string                 `validate:"required,min=3,max=30"`
 	Email     string                 `validate:"required,email"`
-	Shorts    []shortener.ShortModel `validate:"dive"`
+	Shorts    []shortener.ShortModel `gorm:"foreignKey:UserID" validate:"dive"`
 }

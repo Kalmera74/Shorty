@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/Kalmera74/Shorty/internal/types"
-	"github.com/Kalmera74/Shorty/internal/validation"
 	"gorm.io/gorm"
 )
 
@@ -52,10 +51,6 @@ func (s *PostgresURLStore) GetById(shortID types.ShortId) (ShortModel, error) {
 	return url, nil
 }
 func (s *PostgresURLStore) GetByShortUrl(shortUrl string) (ShortModel, error) {
-
-	if err := validation.ValidateUrl(shortUrl); err != nil {
-		return ShortModel{}, &ShortenError{Msg: fmt.Sprintf("Could not get the short with the short url: %v. Reason: %v", shortUrl, err.Error()), Err: err}
-	}
 
 	var short ShortModel
 	result := s.db.Where("short_url = ?", shortUrl).First(&short)

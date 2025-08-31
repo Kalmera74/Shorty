@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/Kalmera74/Shorty/internal/validation"
 )
 
 type IUserService interface {
@@ -40,10 +39,6 @@ func (s *userService) GetAllUsers() ([]UserResponse, error) {
 	return users, nil
 }
 func (s *userService) GetUser(id uint) (UserResponse, error) {
-
-	if err := validation.ValidateID(id); err != nil {
-		return UserResponse{}, err
-	}
 
 	userModel, err := s.UserStore.Get(id)
 	if err != nil {
@@ -109,9 +104,6 @@ func (s *userService) UpdateUser(id uint, req UserUpdateRequest) error {
 }
 func (s *userService) DeleteUser(id uint) error {
 
-	if err := validation.ValidateID(id); err != nil {
-		return err
-	}
 	err := s.UserStore.Delete(id)
 	if err != nil {
 		return &UserError{Msg: fmt.Sprintf("Could not delete user %d. Reason: %v", id, err.Error()), Err: err}

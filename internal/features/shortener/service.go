@@ -5,13 +5,11 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strconv"
 	"time"
 
 	"github.com/Kalmera74/Shorty/internal/types"
-	"github.com/Kalmera74/Shorty/internal/validation"
 	"github.com/Kalmera74/Shorty/pkg/redis"
 )
 
@@ -95,9 +93,6 @@ func (s *shortService) GetById(id types.ShortId) (ShortModel, error) {
 
 }
 func (s *shortService) GetByShortUrl(shortUrl string) (ShortModel, error) {
-	if shortUrl == "" {
-		return ShortModel{}, &ShortenError{Msg: "Short url cannot be nil or empty"}
-	}
 
 	ctx := context.Background()
 	cachedShort, err := s.cacher.Get(ctx, shortUrl)
@@ -112,10 +107,7 @@ func (s *shortService) GetByShortUrl(shortUrl string) (ShortModel, error) {
 
 	short, err := s.store.GetByShortUrl(shortUrl)
 	if err != nil {
-		if errors.Is(err, &ShortNotFoundError{}) {
-			return ShortModel{}, err
-		}
-		return ShortModel{}, &ShortenError{Msg: fmt.Sprintf("Could not get the short with the Id: %v Reason: %v", shortUrl, err.Error()), Err: err}
+		return ShortModel{}, &ShortNotFoundError{Msg: fmt.Sprintf("Could not get the short with the Id: %v Reason: %v", shortUrl, err.Error()), Err: err}
 	}
 
 	marshalledShort, err := json.Marshal(short)
@@ -123,34 +115,22 @@ func (s *shortService) GetByShortUrl(shortUrl string) (ShortModel, error) {
 
 		s.cacher.Set(ctx, shortUrl, marshalledShort, time.Minute*5)
 	}
+
 	return short, nil
 }
 func (s *shortService) GetByLongUrl(originalUrl string) (ShortModel, error) {
-	if err := validation.ValidateUrl(originalUrl); err != nil {
-		return ShortModel{}, err
-	}
-
+	
 	url, err := s.store.GetByLongUrl(originalUrl)
 	if err != nil {
-		if errors.Is(err, &ShortNotFoundError{}) {
-			return ShortModel{}, err
-		}
-		return ShortModel{}, &ShortenError{Msg: fmt.Sprintf("Could not get the short with the original Url: %v Reason: %v", originalUrl, err.Error()), Err: err}
+		return ShortModel{}, &ShortNotFoundError{Msg: fmt.Sprintf("Could not get the short with the original Url: %v Reason: %v", originalUrl, err.Error()), Err: err}
 	}
 	return url, nil
 }
 func (s *shortService) Search(req SearchRequest) (ShortModel, error) {
 	if req.OriginalUrl != nil {
-
-		if err := validation.ValidateUrl(*req.OriginalUrl); err != nil {
-			return ShortModel{}, err
-		}
 		url, err := s.store.GetByLongUrl(*req.OriginalUrl)
 		if err != nil {
-			if errors.Is(err, &ShortNotFoundError{}) {
-				return ShortModel{}, fmt.Errorf("short not found")
-			}
-			return ShortModel{}, fmt.Errorf("could not search for the short with original URL: %v. reason: %w", req.OriginalUrl, err)
+			return ShortModel{}, &ShortNotFoundError{Msg: fmt.Sprintf("Could not search for the short with original URL: %v. reason: %v", *req.OriginalUrl, err)}
 		}
 
 		return url, nil

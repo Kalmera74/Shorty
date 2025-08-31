@@ -16,10 +16,10 @@ COPY . .
 
 # Ensure Swagger docs are included (if they are generated in cmd/shorty/docs)
 RUN go install github.com/swaggo/swag/cmd/swag@latest
-RUN swag init --dir ./cmd/shorty,./internal --output ./docs
+RUN swag init --dir ./cmd/api,./internal --output ./docs
 
 # Build the Go app
-RUN go build -o shorty ./cmd/shorty
+RUN go build -o shorty ./cmd/api
 
 # Expose service port (update if needed)
 EXPOSE 8080

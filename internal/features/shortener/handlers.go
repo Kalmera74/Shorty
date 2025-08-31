@@ -5,9 +5,12 @@ import (
 	"strconv"
 
 	"github.com/Kalmera74/Shorty/internal/types"
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 )
+
+var validate = validator.New(validator.WithRequiredStructEnabled())
 
 type URLHandler struct {
 	service IShortService
@@ -60,6 +63,11 @@ func (h *URLHandler) Shorten(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request"})
 	}
 
+	err := validate.Struct(req)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
 	short, err := h.service.ShortenURL(req)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
@@ -84,14 +92,17 @@ func (h *URLHandler) Shorten(c *fiber.Ctx) error {
 // @Router /shorten/{id} [get]
 func (h *URLHandler) GetById(c *fiber.Ctx) error {
 	paramId := c.Params("id")
+
 	id, err := strconv.ParseUint(paramId, 10, 64)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
+
 	shortModel, err := h.service.GetById(types.ShortId(id))
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 	}
+
 	shortenResponse := ShortenResponse{
 		Id:          uint(shortModel.ID),
 		OriginalUrl: shortModel.OriginalUrl,
@@ -116,7 +127,6 @@ func (h *URLHandler) GetByShortUrl(c *fiber.Ctx) error {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Short not found"})
 		}
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
 	shortenResponse := ShortenResponse{
@@ -142,7 +152,13 @@ func (h *URLHandler) GetByShortUrl(c *fiber.Ctx) error {
 // @Router /shorten/search [post]
 func (h *URLHandler) Search(c *fiber.Ctx) error {
 	var req SearchRequest
+
 	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	err := validate.Struct(req)
+	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
