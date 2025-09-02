@@ -1,8 +1,12 @@
 package user
 
 import (
+	"fmt"
 	"strconv"
+	"time"
 
+	"github.com/Kalmera74/Shorty/internal/types"
+	"github.com/Kalmera74/Shorty/pkg/auth"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 )
@@ -24,7 +28,7 @@ func NewUserHandler(service IUserService) *UserHandler {
 // @Produce json
 // @Success 200 {array} UserResponse
 // @Failure 500 {object} map[string]string
-// @Router /users [get]
+// @Router /api/v1/users [get]
 func (h *UserHandler) GetAllUsers(c *fiber.Ctx) error {
 	allUsers, err := h.service.GetAllUsers()
 	if err != nil {
@@ -43,7 +47,7 @@ func (h *UserHandler) GetAllUsers(c *fiber.Ctx) error {
 // @Success 201 {object} UserResponse
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
-// @Router /users [post]
+// @Router /api/v1/users [post]
 func (h *UserHandler) GetUser(c *fiber.Ctx) error {
 	idParam := c.Params("id")
 	id, err := strconv.Atoi(idParam)
@@ -51,12 +55,49 @@ func (h *UserHandler) GetUser(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid user ID"})
 	}
 
-	userResp, err := h.service.GetUser(uint(id))
+	userResp, err := h.service.GetUser(types.UserId(id))
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 	}
 
 	return c.JSON(userResp)
+}
+
+// Login godoc
+// @Summary      User login
+// @Description  Authenticate user with email and password, returns a JWT token
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        request body UserLoginRequest true "User login credentials"
+// @Success      200 {object} UserLoginResponse "JWT token successfully generated"
+// @Failure      400 {object} map[string]string "Invalid request body"
+// @Failure      401 {object} map[string]string "Invalid credentials"
+// @Failure      500 {object} map[string]string "Could not create token"
+// @Router       /api/v1/users/login [post]
+func (h *UserHandler) Login(c *fiber.Ctx) error {
+	var req UserLoginRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+
+	err := validate.Struct(req)
+	if err == nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	user, err := h.service.VerifyCredentials(req.Email, req.Password)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid credentials"})
+	}
+
+	signedToken, err := auth.GenerateJWTToken(user.ID, time.Now().Add(time.Hour*72).Unix())
+	if err != nil {
+		fmt.Println("Failed to sign token:", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not create token"})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(UserLoginResponse{Token: signedToken})
 }
 
 // GetUser godoc
@@ -68,7 +109,7 @@ func (h *UserHandler) GetUser(c *fiber.Ctx) error {
 // @Success 200 {object} UserResponse
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
-// @Router /users/{id} [get]
+// @Router /api/v1/users/{id} [get]
 func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 	var createReq UserCreateRequest
 	if err := c.BodyParser(&createReq); err != nil {
@@ -99,7 +140,7 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 // @Success 204
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
-// @Router /users/{id} [put]
+// @Router /api/v1/users/{id} [put]
 func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 	idParam := c.Params("id")
 	id, err := strconv.ParseUint(idParam, 10, 64)
@@ -117,7 +158,7 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 
 	}
 
-	if err := h.service.UpdateUser(uint(id), updateReq); err != nil {
+	if err := h.service.UpdateUser(types.UserId(id), updateReq); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -132,7 +173,7 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 // @Success 204
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
-// @Router /users/{id} [delete]
+// @Router /api/v1/users/{id} [delete]
 func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
 	idParam := c.Params("id")
 	id, err := strconv.ParseUint(idParam, 10, 64)
@@ -140,7 +181,7 @@ func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid user ID"})
 	}
 
-	if err := h.service.DeleteUser(uint(id)); err != nil {
+	if err := h.service.DeleteUser(types.UserId(id)); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 

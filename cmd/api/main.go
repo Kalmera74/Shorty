@@ -7,6 +7,7 @@ import (
 	"github.com/Kalmera74/Shorty/internal/db"
 	"github.com/Kalmera74/Shorty/internal/features/shortener"
 	"github.com/Kalmera74/Shorty/internal/features/user"
+	"github.com/Kalmera74/Shorty/pkg/auth"
 	"github.com/Kalmera74/Shorty/pkg/redis"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -44,17 +45,18 @@ func main() {
 
 	app.Get("/swagger/*", swagger.HandlerDefault)
 
+	auth.InitJwt()
 	redis.InitRedisClient()
-
-	store := shortener.NewShortRepository(dbConn)
-	service := shortener.NewShortService(store, redis.NewCacher(redis.Client))
-	handler := shortener.NewShortHandler(service)
-	shortener.RegisterRoutes(app, handler)
 
 	userStore := user.NewUserRepository(dbConn)
 	userService := user.NewUserService(userStore)
 	userHandler := user.NewUserHandler(userService)
 	user.RegisterRoutes(app, userHandler)
+
+	shortStore := shortener.NewShortRepository(dbConn)
+	shortService := shortener.NewShortService(shortStore, redis.NewCacher(redis.Client))
+	shortHandler := shortener.NewShortHandler(shortService)
+	shortener.RegisterRoutes(app, shortHandler)
 
 	port := os.Getenv("PORT")
 	if port == "" {

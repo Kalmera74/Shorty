@@ -7,10 +7,17 @@ definitions:
     type: object
   shortener.ShortenRequest:
     properties:
+      custom_short_url:
+        maxLength: 8
+        type: string
       original_url:
         type: string
       user_id:
+        minimum: 1
         type: integer
+    required:
+    - original_url
+    - user_id
     type: object
   shortener.ShortenResponse:
     properties:
@@ -25,7 +32,24 @@ definitions:
     properties:
       email:
         type: string
+      password:
+        type: string
       user_name:
+        type: string
+    type: object
+  user.UserLoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  user.UserLoginResponse:
+    properties:
+      token:
         type: string
     type: object
   user.UserResponse:
@@ -41,7 +65,13 @@ definitions:
     properties:
       email:
         type: string
+      password:
+        maxLength: 30
+        minLength: 5
+        type: string
       user_name:
+        maxLength: 30
+        minLength: 3
         type: string
     type: object
 host: localhost:8080
@@ -56,27 +86,36 @@ paths:
   /{url}:
     get:
       parameters:
-      - description: Short string ID
+      - description: Short URL
         in: path
         name: url
         required: true
         type: string
+      produces:
+      - application/json
       responses:
         "301":
           description: Redirects to the original URL
           schema:
             type: string
         "404":
-          description: Short not found
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
           schema:
             additionalProperties:
               type: string
             type: object
       summary: Redirect to the original URL
       tags:
-      - Shortener
-  /shorten:
+      - shorts
+  /api/v1/shorts:
     get:
+      description: Retrieve all shortened URLs
       produces:
       - application/json
       responses:
@@ -87,22 +126,22 @@ paths:
               $ref: '#/definitions/shortener.ShortenResponse'
             type: array
         "404":
-          description: No Shorts found
+          description: Not Found
           schema:
             additionalProperties:
               type: string
             type: object
-      summary: Get all Shorts in the system
+      summary: Get all shortened URLs
       tags:
-      - Shortener
+      - shorts
     post:
       consumes:
       - application/json
-      description: Creates a new Short for the given long URL.
+      description: Shorten a given URL
       parameters:
-      - description: Shorten URL request
+      - description: Shorten Request
         in: body
-        name: body
+        name: request
         required: true
         schema:
           $ref: '#/definitions/shortener.ShortenRequest'
@@ -114,47 +153,63 @@ paths:
           schema:
             $ref: '#/definitions/shortener.ShortenResponse'
         "400":
-          description: Invalid request
+          description: Bad Request
           schema:
             additionalProperties:
               type: string
             type: object
         "500":
-          description: Internal server error
+          description: Internal Server Error
           schema:
             additionalProperties:
               type: string
             type: object
-      summary: Shorten a URL
+      summary: Create a new shortened URL
       tags:
-      - Shortener
-  /shorten/{id}:
+      - shorts
+  /api/v1/shorts/{id}:
     delete:
       parameters:
-      - description: Short numeric ID
+      - description: Short ID
         in: path
         name: id
         required: true
-        type: string
+        type: integer
+      produces:
+      - application/json
       responses:
         "204":
           description: No Content
-        "404":
-          description: Short not found
+          schema:
+            type: string
+        "400":
+          description: Bad Request
           schema:
             additionalProperties:
               type: string
             type: object
-      summary: Delete a Short by its numeric ID
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete a shortened URL
       tags:
-      - Shortener
+      - shorts
     get:
       parameters:
-      - description: Short numeric ID
+      - description: Short ID
         in: path
         name: id
         required: true
-        type: string
+        type: integer
       produces:
       - application/json
       responses:
@@ -162,24 +217,30 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/shortener.ShortenResponse'
-        "404":
-          description: Short not found
+        "400":
+          description: Bad Request
           schema:
             additionalProperties:
               type: string
             type: object
-      summary: Get a Short by its numeric ID
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get a shortened URL by ID
       tags:
-      - Shortener
-  /shorten/search:
+      - shorts
+  /api/v1/shorts/search:
     post:
       consumes:
       - application/json
-      description: Looks up a Short by providing its original, long URL.
+      description: Search using filters (URL, etc.)
       parameters:
-      - description: Original URL to look up
+      - description: Search criteria
         in: body
-        name: body
+        name: request
         required: true
         schema:
           $ref: '#/definitions/shortener.SearchRequest'
@@ -191,30 +252,30 @@ paths:
           schema:
             $ref: '#/definitions/shortener.ShortenResponse'
         "400":
-          description: Invalid request
+          description: Bad Request
           schema:
             additionalProperties:
               type: string
             type: object
         "404":
-          description: Short not found
+          description: Not Found
           schema:
             additionalProperties:
               type: string
             type: object
         "500":
-          description: Internal server error
+          description: Internal Server Error
           schema:
             additionalProperties:
               type: string
             type: object
-      summary: Search for a Short by its original URL
+      summary: Search for a shortened URL
       tags:
-      - Shortener
-  /shorten/short/{url}:
+      - shorts
+  /api/v1/shorts/short/{url}:
     get:
       parameters:
-      - description: Short URL string
+      - description: Short URL
         in: path
         name: url
         required: true
@@ -227,41 +288,15 @@ paths:
           schema:
             $ref: '#/definitions/shortener.ShortenResponse'
         "404":
-          description: Short not found
+          description: Not Found
           schema:
             additionalProperties:
               type: string
             type: object
-      summary: Gets a Short by its short URL
+      summary: Get a shortened URL by short code
       tags:
-      - Shortener
-  /shorten/user/{id}:
-    get:
-      parameters:
-      - description: User ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/shortener.ShortenResponse'
-            type: array
-        "404":
-          description: No Shorts found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Get all Shorts for a user
-      tags:
-      - Shortener
-  /users:
+      - shorts
+  /api/v1/users:
     get:
       description: Get all registered users
       produces:
@@ -315,7 +350,7 @@ paths:
       summary: Create a new user
       tags:
       - users
-  /users/{id}:
+  /api/v1/users/{id}:
     delete:
       description: Remove a user by ID
       parameters:
@@ -408,4 +443,76 @@ paths:
       summary: Update a user
       tags:
       - users
+  /api/v1/users/{id}/shorts:
+    get:
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/shortener.ShortenResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get all shorts for a specific user
+      tags:
+      - users
+  /api/v1/users/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user with email and password, returns a JWT token
+      parameters:
+      - description: User login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/user.UserLoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: JWT token successfully generated
+          schema:
+            $ref: '#/definitions/user.UserLoginResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Invalid credentials
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Could not create token
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: User login
+      tags:
+      - auth
 swagger: "2.0"

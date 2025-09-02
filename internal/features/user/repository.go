@@ -12,6 +12,7 @@ type UserStore interface {
 	Add(user UserModel) (UserModel, error)
 	Update(id uint, user UserModel) error
 	Delete(id uint) error
+	GetByEmail(email string) (UserModel, error)
 }
 
 type PostgresUserStore struct {
@@ -47,6 +48,18 @@ func (s *PostgresUserStore) Get(id uint) (UserModel, error) {
 	}
 
 	return u, nil
+}
+func (s *PostgresUserStore) GetByEmail(email string) (UserModel, error) {
+
+	var user UserModel
+	result := s.db.Where("email =?", email).First(&user)
+
+	if result.Error != nil {
+		return UserModel{}, result.Error
+	}
+
+	return user, nil
+
 }
 func (s *PostgresUserStore) Add(u UserModel) (UserModel, error) {
 	result := s.db.Create(&u)

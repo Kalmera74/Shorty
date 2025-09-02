@@ -37,6 +37,7 @@ func NewShortService(store ShortStore, cacher redis.Cacher) IShortService {
 
 func (s *shortService) ShortenURL(req ShortenRequest) (ShortModel, error) {
 
+	//TODO: Update the user model to include the crated short
 	ctx := context.Background()
 	cachedShortID, err := s.cacher.Get(ctx, req.Url)
 	if err == nil && cachedShortID != "" {
@@ -54,9 +55,11 @@ func (s *shortService) ShortenURL(req ShortenRequest) (ShortModel, error) {
 		return existingShort, nil
 	}
 
+	var shortID string
+
 	h := sha1.New()
 	h.Write([]byte(req.Url))
-	shortID := hex.EncodeToString(h.Sum(nil))[:8]
+	shortID = hex.EncodeToString(h.Sum(nil))[:8]
 
 	url := ShortModel{
 		UserID:      types.UserId(req.UserID),
@@ -119,7 +122,7 @@ func (s *shortService) GetByShortUrl(shortUrl string) (ShortModel, error) {
 	return short, nil
 }
 func (s *shortService) GetByLongUrl(originalUrl string) (ShortModel, error) {
-	
+
 	url, err := s.store.GetByLongUrl(originalUrl)
 	if err != nil {
 		return ShortModel{}, &ShortNotFoundError{Msg: fmt.Sprintf("Could not get the short with the original Url: %v Reason: %v", originalUrl, err.Error()), Err: err}

@@ -18,15 +18,16 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/shorten": {
+        "/api/v1/shorts": {
             "get": {
+                "description": "Retrieve all shortened URLs",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Shortener"
+                    "shorts"
                 ],
-                "summary": "Get all Shorts in the system",
+                "summary": "Get all shortened URLs",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -38,7 +39,7 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "No Shorts found",
+                        "description": "Not Found",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -49,7 +50,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Creates a new Short for the given long URL.",
+                "description": "Shorten a given URL",
                 "consumes": [
                     "application/json"
                 ],
@@ -57,13 +58,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Shortener"
+                    "shorts"
                 ],
-                "summary": "Shorten a URL",
+                "summary": "Create a new shortened URL",
                 "parameters": [
                     {
-                        "description": "Shorten URL request",
-                        "name": "body",
+                        "description": "Shorten Request",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -79,7 +80,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid request",
+                        "description": "Bad Request",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -88,7 +89,7 @@ const docTemplate = `{
                         }
                     },
                     "500": {
-                        "description": "Internal server error",
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -99,9 +100,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/shorten/search": {
+        "/api/v1/shorts/search": {
             "post": {
-                "description": "Looks up a Short by providing its original, long URL.",
+                "description": "Search using filters (URL, etc.)",
                 "consumes": [
                     "application/json"
                 ],
@@ -109,13 +110,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Shortener"
+                    "shorts"
                 ],
-                "summary": "Search for a Short by its original URL",
+                "summary": "Search for a shortened URL",
                 "parameters": [
                     {
-                        "description": "Original URL to look up",
-                        "name": "body",
+                        "description": "Search criteria",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -131,7 +132,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid request",
+                        "description": "Bad Request",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -140,7 +141,7 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "Short not found",
+                        "description": "Not Found",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -149,7 +150,7 @@ const docTemplate = `{
                         }
                     },
                     "500": {
-                        "description": "Internal server error",
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -160,19 +161,19 @@ const docTemplate = `{
                 }
             }
         },
-        "/shorten/short/{url}": {
+        "/api/v1/shorts/short/{url}": {
             "get": {
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Shortener"
+                    "shorts"
                 ],
-                "summary": "Gets a Short by its short URL",
+                "summary": "Get a shortened URL by short code",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Short URL string",
+                        "description": "Short URL",
                         "name": "url",
                         "in": "path",
                         "required": true
@@ -186,7 +187,7 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "Short not found",
+                        "description": "Not Found",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -197,59 +198,19 @@ const docTemplate = `{
                 }
             }
         },
-        "/shorten/user/{id}": {
+        "/api/v1/shorts/{id}": {
             "get": {
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Shortener"
+                    "shorts"
                 ],
-                "summary": "Get all Shorts for a user",
+                "summary": "Get a shortened URL by ID",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "User ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/shortener.ShortenResponse"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "No Shorts found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/shorten/{id}": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Shortener"
-                ],
-                "summary": "Get a Short by its numeric ID",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Short numeric ID",
+                        "type": "integer",
+                        "description": "Short ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -262,8 +223,17 @@ const docTemplate = `{
                             "$ref": "#/definitions/shortener.ShortenResponse"
                         }
                     },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
                     "404": {
-                        "description": "Short not found",
+                        "description": "Not Found",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -274,14 +244,17 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "tags": [
-                    "Shortener"
+                "produces": [
+                    "application/json"
                 ],
-                "summary": "Delete a Short by its numeric ID",
+                "tags": [
+                    "shorts"
+                ],
+                "summary": "Delete a shortened URL",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Short numeric ID",
+                        "type": "integer",
+                        "description": "Short ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -289,10 +262,31 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "204": {
-                        "description": "No Content"
+                        "description": "No Content",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
                     },
                     "404": {
-                        "description": "Short not found",
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -303,7 +297,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/users": {
+        "/api/v1/users": {
             "get": {
                 "description": "Get all registered users",
                 "produces": [
@@ -385,7 +379,68 @@ const docTemplate = `{
                 }
             }
         },
-        "/users/{id}": {
+        "/api/v1/users/login": {
+            "post": {
+                "description": "Authenticate user with email and password, returns a JWT token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "User login",
+                "parameters": [
+                    {
+                        "description": "User login credentials",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user.UserLoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "JWT token successfully generated",
+                        "schema": {
+                            "$ref": "#/definitions/user.UserLoginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid credentials",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Could not create token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/{id}": {
             "get": {
                 "description": "Fetch a user given their ID",
                 "produces": [
@@ -525,16 +580,68 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/users/{id}/shorts": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get all shorts for a specific user",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/shortener.ShortenResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/{url}": {
             "get": {
+                "produces": [
+                    "application/json"
+                ],
                 "tags": [
-                    "Shortener"
+                    "shorts"
                 ],
                 "summary": "Redirect to the original URL",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Short string ID",
+                        "description": "Short URL",
                         "name": "url",
                         "in": "path",
                         "required": true
@@ -548,7 +655,16 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "Short not found",
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -571,12 +687,21 @@ const docTemplate = `{
         },
         "shortener.ShortenRequest": {
             "type": "object",
+            "required": [
+                "original_url",
+                "user_id"
+            ],
             "properties": {
+                "custom_short_url": {
+                    "type": "string",
+                    "maxLength": 8
+                },
                 "original_url": {
                     "type": "string"
                 },
                 "user_id": {
-                    "type": "integer"
+                    "type": "integer",
+                    "minimum": 1
                 }
             }
         },
@@ -600,7 +725,33 @@ const docTemplate = `{
                 "email": {
                     "type": "string"
                 },
+                "password": {
+                    "type": "string"
+                },
                 "user_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "user.UserLoginRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "user.UserLoginResponse": {
+            "type": "object",
+            "properties": {
+                "token": {
                     "type": "string"
                 }
             }
@@ -625,8 +776,15 @@ const docTemplate = `{
                 "email": {
                     "type": "string"
                 },
+                "password": {
+                    "type": "string",
+                    "maxLength": 30,
+                    "minLength": 5
+                },
                 "user_name": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 30,
+                    "minLength": 3
                 }
             }
         }

@@ -1,21 +1,26 @@
 package shortener
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"github.com/Kalmera74/Shorty/pkg/auth"
+	"github.com/gofiber/fiber/v2"
+
+	jwtware "github.com/gofiber/contrib/jwt"
+)
 
 func RegisterRoutes(app *fiber.App, handler *URLHandler) {
 
-	short := app.Group("/shorten")
+	api := app.Group("/api/v1")
+	shorts := api.Group("/shorts")
 
-	short.Get("/", handler.GetAll)
-	short.Post("/", handler.Shorten)
-	short.Post("/search", handler.Search)
+	shorts.Post("/", jwtware.New(jwtware.Config{
+		SigningKey: jwtware.SigningKey{Key: []byte(auth.JwtSecretKey)},
+	}), handler.Shorten)
 
-	short.Get("/short/:url{[a-zA-Z0-9]+}", handler.GetByShortUrl)
-
-	short.Get("/user/:id+", handler.GetAllByUser)
-	short.Get("/:id+", handler.GetById)
-	short.Delete("/:id+", handler.Delete)
+	shorts.Get("/", handler.GetAll)
+	shorts.Post("/search", handler.Search)
+	shorts.Get("/user/:id+/shorts", handler.GetAllByUser)
+	shorts.Get("/:id+", handler.GetById)
+	shorts.Delete("/:id+", handler.Delete)
 
 	app.Get("/:url{[a-zA-Z0-9]+}", handler.RedirectToOriginalUrl)
-
 }
