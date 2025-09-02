@@ -1,7 +1,6 @@
 package user
 
 import (
-	"fmt"
 	"strconv"
 	"time"
 
@@ -37,7 +36,7 @@ func (h *UserHandler) GetAllUsers(c *fiber.Ctx) error {
 	return c.JSON(allUsers)
 }
 
-// CreateUser godoc
+// GetUser godoc
 // @Summary Create a new user
 // @Description Create user with username and email
 // @Tags users
@@ -50,14 +49,14 @@ func (h *UserHandler) GetAllUsers(c *fiber.Ctx) error {
 // @Router /api/v1/users [post]
 func (h *UserHandler) GetUser(c *fiber.Ctx) error {
 	idParam := c.Params("id")
-	id, err := strconv.Atoi(idParam)
+	id, err := strconv.ParseUint(idParam, 10, 64)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid user ID"})
 	}
 
 	userResp, err := h.service.GetUser(types.UserId(id))
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err})
 	}
 
 	return c.JSON(userResp)
@@ -82,7 +81,7 @@ func (h *UserHandler) Login(c *fiber.Ctx) error {
 	}
 
 	err := validate.Struct(req)
-	if err == nil {
+	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -93,14 +92,13 @@ func (h *UserHandler) Login(c *fiber.Ctx) error {
 
 	signedToken, err := auth.GenerateJWTToken(user.ID, time.Now().Add(time.Hour*72).Unix())
 	if err != nil {
-		fmt.Println("Failed to sign token:", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not create token"})
 	}
 
 	return c.Status(fiber.StatusOK).JSON(UserLoginResponse{Token: signedToken})
 }
 
-// GetUser godoc
+// CreateUser godoc
 // @Summary Get a user by ID
 // @Description Fetch a user given their ID
 // @Tags users
@@ -155,7 +153,7 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 
 	reqErr := validate.Struct(updateReq)
 	if reqErr != nil {
-
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": reqErr.Error()})
 	}
 
 	if err := h.service.UpdateUser(types.UserId(id), updateReq); err != nil {

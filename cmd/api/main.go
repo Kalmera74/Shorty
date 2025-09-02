@@ -45,6 +45,7 @@ func main() {
 
 	app.Get("/swagger/*", swagger.HandlerDefault)
 
+
 	auth.InitJwt()
 	redis.InitRedisClient()
 

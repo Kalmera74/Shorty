@@ -62,9 +62,6 @@ func (s *userService) CreateUser(req UserCreateRequest) (UserResponse, error) {
 
 	existingUser, err := s.GetByEmail(req.Email)
 
-	if err != nil {
-		return UserResponse{}, err
-	}
 
 	if existingUser != nil {
 		return UserResponse{}, errors.New("The email is already in use")
