@@ -165,6 +165,8 @@ func (h *ShortHandler) Search(c *fiber.Ctx) error {
 // @Failure 500 {object} map[string]string
 // @Router /{url} [get]
 func (h *ShortHandler) RedirectToOriginalUrl(c *fiber.Ctx) error {
+
+	//TODO: Publish a rabbit message to handle the clicks data
 	short := c.Params("url")
 	shortModel, err := h.service.GetByShortUrl(short)
 	if err != nil {

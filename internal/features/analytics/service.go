@@ -17,7 +17,6 @@ func NewAnalyticService(p IClickRepository) IAnalyticsService {
 }
 
 func (s *analyticsService) Create(click ClickModel) (ClickModel, error) {
-	//TODO: Publish a rabbit message to handle the clicks data
 	createdClick, err := s.Repository.Create(click)
 	if err != nil {
 		return ClickModel{}, fmt.Errorf("%w: %v", ErrClickCreateFail, err)
