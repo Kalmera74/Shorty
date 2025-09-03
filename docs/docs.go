@@ -18,6 +18,153 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/analytics": {
+            "get": {
+                "description": "Returns all click analytics grouped by short URLs",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "analytics"
+                ],
+                "summary": "Get all click analytics",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/analytics.Analysis"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No clicks found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to fetch analytics",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Records a click for a short URL",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "analytics"
+                ],
+                "summary": "Create a new click record",
+                "parameters": [
+                    {
+                        "description": "Click information",
+                        "name": "click",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/analytics.ClickRecord"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/analytics.ClickModel"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to create click",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/analytics/{shortUrl}": {
+            "get": {
+                "description": "Returns click analytics for the given short URL",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "analytics"
+                ],
+                "summary": "Get analytics for a specific short URL",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Short URL identifier",
+                        "name": "shortUrl",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/analytics.Analysis"
+                        }
+                    },
+                    "400": {
+                        "description": "Missing shortUrl parameter",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No clicks found for this short URL",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to fetch clicks",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/shorts": {
             "get": {
                 "description": "Retrieve all shortened URLs",
@@ -677,11 +824,125 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "analytics.Analysis": {
+            "type": "object",
+            "properties": {
+                "originalUrl": {
+                    "type": "string"
+                },
+                "shortUrl": {
+                    "type": "string"
+                },
+                "usageDetails": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/analytics.Usage"
+                    }
+                }
+            }
+        },
+        "analytics.ClickModel": {
+            "type": "object",
+            "required": [
+                "ip_address",
+                "short_id",
+                "user_agent"
+            ],
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "ip_address": {
+                    "type": "string"
+                },
+                "short": {
+                    "$ref": "#/definitions/shortener.ShortModel"
+                },
+                "short_id": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_agent": {
+                    "type": "string"
+                }
+            }
+        },
+        "analytics.ClickRecord": {
+            "type": "object",
+            "properties": {
+                "clickTimes": {
+                    "type": "string"
+                },
+                "ipAddress": {
+                    "type": "string"
+                },
+                "shortID": {
+                    "type": "integer"
+                },
+                "userAgents": {
+                    "type": "string"
+                }
+            }
+        },
+        "analytics.Usage": {
+            "type": "object",
+            "properties": {
+                "clickTimes": {
+                    "type": "string"
+                },
+                "ipAddress": {
+                    "type": "string"
+                },
+                "userAgents": {
+                    "type": "string"
+                }
+            }
+        },
         "shortener.SearchRequest": {
             "type": "object",
             "properties": {
                 "original_url": {
                     "type": "string"
+                }
+            }
+        },
+        "shortener.ShortModel": {
+            "type": "object",
+            "required": [
+                "originalUrl",
+                "shortUrl",
+                "userID"
+            ],
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "originalUrl": {
+                    "type": "string"
+                },
+                "shortUrl": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "userID": {
+                    "type": "integer",
+                    "minimum": 1
                 }
             }
         },
@@ -693,8 +954,7 @@ const docTemplate = `{
             ],
             "properties": {
                 "custom_short_url": {
-                    "type": "string",
-                    "maxLength": 8
+                    "type": "string"
                 },
                 "original_url": {
                     "type": "string"
@@ -721,15 +981,24 @@ const docTemplate = `{
         },
         "user.UserCreateRequest": {
             "type": "object",
+            "required": [
+                "email",
+                "password",
+                "user_name"
+            ],
             "properties": {
                 "email": {
                     "type": "string"
                 },
                 "password": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 30,
+                    "minLength": 5
                 },
                 "user_name": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 10,
+                    "minLength": 3
                 }
             }
         },
@@ -744,7 +1013,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "password": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 30,
+                    "minLength": 5
                 }
             }
         },

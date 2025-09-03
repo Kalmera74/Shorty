@@ -70,7 +70,7 @@ func (s *shortService) ShortenURL(req ShortenRequest) (ShortModel, error) {
 	short, err := s.store.Create(url)
 
 	if err != nil {
-		return ShortModel{}, &ShortenError{Msg: fmt.Sprintf("Could not create the shortened url. Reason: %v", err.Error()), Err: err}
+		return ShortModel{}, fmt.Errorf("%w: %v", ErrShortenFailed, err)
 	}
 
 	s.cacher.Set(ctx, req.Url, short.ID, time.Minute*5)
@@ -110,7 +110,7 @@ func (s *shortService) GetByShortUrl(shortUrl string) (ShortModel, error) {
 
 	short, err := s.store.GetByShortUrl(shortUrl)
 	if err != nil {
-		return ShortModel{}, &ShortNotFoundError{Msg: fmt.Sprintf("Could not get the short with the Id: %v Reason: %v", shortUrl, err.Error()), Err: err}
+		return ShortModel{}, fmt.Errorf("%w: %v", ErrShortNotFound, err)
 	}
 
 	marshalledShort, err := json.Marshal(short)
@@ -125,7 +125,7 @@ func (s *shortService) GetByLongUrl(originalUrl string) (ShortModel, error) {
 
 	url, err := s.store.GetByLongUrl(originalUrl)
 	if err != nil {
-		return ShortModel{}, &ShortNotFoundError{Msg: fmt.Sprintf("Could not get the short with the original Url: %v Reason: %v", originalUrl, err.Error()), Err: err}
+		return ShortModel{}, fmt.Errorf("%w: %v", ErrShortNotFound, err)
 	}
 	return url, nil
 }
@@ -133,13 +133,13 @@ func (s *shortService) Search(req SearchRequest) (ShortModel, error) {
 	if req.OriginalUrl != nil {
 		url, err := s.store.GetByLongUrl(*req.OriginalUrl)
 		if err != nil {
-			return ShortModel{}, &ShortNotFoundError{Msg: fmt.Sprintf("Could not search for the short with original URL: %v. reason: %v", *req.OriginalUrl, err)}
+			return ShortModel{}, fmt.Errorf("%w: %v", ErrShortNotFound, err)
 		}
 
 		return url, nil
 	}
 
-	return ShortModel{}, &ShortNotFoundError{Msg: "No Shorts was found with the given search criteria"}
+	return ShortModel{}, fmt.Errorf("%w: no search parameters provided", ErrInvalidShortenRequest)
 }
 func (s *shortService) GetAllByUser(userID types.UserId) ([]ShortModel, error) {
 

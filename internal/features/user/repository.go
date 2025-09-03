@@ -2,11 +2,12 @@ package user
 
 import (
 	"errors"
+	"fmt"
 
 	"gorm.io/gorm"
 )
 
-type UserStore interface {
+type IUserRepository interface {
 	GetAll() ([]UserModel, error)
 	Get(id uint) (UserModel, error)
 	Add(user UserModel) (UserModel, error)
@@ -15,41 +16,41 @@ type UserStore interface {
 	GetByEmail(email string) (UserModel, error)
 }
 
-type PostgresUserStore struct {
+type postgresUserRepository struct {
 	db *gorm.DB
 }
 
-func NewUserRepository(db *gorm.DB) *PostgresUserStore {
-	return &PostgresUserStore{db}
+func NewUserRepository(db *gorm.DB) IUserRepository {
+	return &postgresUserRepository{db}
 }
 
-func (s *PostgresUserStore) GetAll() ([]UserModel, error) {
+func (s *postgresUserRepository) GetAll() ([]UserModel, error) {
 	var users []UserModel
 	result := s.db.Find(&users)
 
 	if result.Error != nil {
-		return nil, result.Error
+		return nil, fmt.Errorf("could not retrieve users. Reason: %v", result.Error)
 	}
 	if len(users) == 0 {
-		return nil, &UserNotFoundError{Msg: "No user was found", Err: nil}
+		return nil, fmt.Errorf("%w, %v", ErrUserNotFound, "no users in database")
 	}
 
 	return users, nil
 }
-func (s *PostgresUserStore) Get(id uint) (UserModel, error) {
+func (s *postgresUserRepository) Get(id uint) (UserModel, error) {
 	var u UserModel
 	result := s.db.First(&u, id)
 
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return UserModel{}, &UserNotFoundError{Msg: "User not found", Err: result.Error}
+		return UserModel{}, fmt.Errorf("%w, %v", ErrUserNotFound, id)
 	}
 	if result.Error != nil {
-		return UserModel{}, result.Error
+		return UserModel{}, fmt.Errorf("could not retrieve user %d. Reason: %v", id, result.Error)
 	}
 
 	return u, nil
 }
-func (s *PostgresUserStore) GetByEmail(email string) (UserModel, error) {
+func (s *postgresUserRepository) GetByEmail(email string) (UserModel, error) {
 
 	var user UserModel
 	result := s.db.Where("email =?", email).First(&user)
@@ -61,41 +62,41 @@ func (s *PostgresUserStore) GetByEmail(email string) (UserModel, error) {
 	return user, nil
 
 }
-func (s *PostgresUserStore) Add(u UserModel) (UserModel, error) {
+func (s *postgresUserRepository) Add(u UserModel) (UserModel, error) {
 	result := s.db.Create(&u)
 
 	if result.Error != nil {
-		return UserModel{}, result.Error
+		return UserModel{}, fmt.Errorf("could not create user. Reason: %v", result.Error)
 	}
 
 	return u, nil
 }
-func (s *PostgresUserStore) Update(id uint, req UserModel) error {
+func (s *postgresUserRepository) Update(id uint, req UserModel) error {
 	var existingUser UserModel
 
 	result := s.db.First(&existingUser, id)
 
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return &UserNotFoundError{Msg: "User not found", Err: result.Error}
+		return fmt.Errorf("%w, %v", ErrUserNotFound, id)
 	}
 	if result.Error != nil {
-		return result.Error
+		return fmt.Errorf("could not retrieve user %d. Reason: %v", id, result.Error)
 	}
 
 	updateResult := s.db.Model(&existingUser).Updates(req)
 
 	if updateResult.Error != nil {
-		return updateResult.Error
+		return fmt.Errorf("could not update user %d. Reason: %v", id, updateResult.Error)
 	}
 
 	return nil
 }
-func (s *PostgresUserStore) Delete(id uint) error {
+func (s *postgresUserRepository) Delete(id uint) error {
 	result := s.db.Delete(&UserModel{}, id)
 
 	if result.RowsAffected == 0 {
-		return &UserNotFoundError{Msg: "User not found", Err: gorm.ErrRecordNotFound}
+		return fmt.Errorf("%w, %v", ErrUserNotFound, id)
 	}
 
-	return result.Error
+	return nil
 }

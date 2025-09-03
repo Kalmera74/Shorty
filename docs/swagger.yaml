@@ -1,14 +1,89 @@
 basePath: /
 definitions:
+  analytics.Analysis:
+    properties:
+      originalUrl:
+        type: string
+      shortUrl:
+        type: string
+      usageDetails:
+        items:
+          $ref: '#/definitions/analytics.Usage'
+        type: array
+    type: object
+  analytics.ClickModel:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      id:
+        type: integer
+      ip_address:
+        type: string
+      short:
+        $ref: '#/definitions/shortener.ShortModel'
+      short_id:
+        type: integer
+      updated_at:
+        type: string
+      user_agent:
+        type: string
+    required:
+    - ip_address
+    - short_id
+    - user_agent
+    type: object
+  analytics.ClickRecord:
+    properties:
+      clickTimes:
+        type: string
+      ipAddress:
+        type: string
+      shortID:
+        type: integer
+      userAgents:
+        type: string
+    type: object
+  analytics.Usage:
+    properties:
+      clickTimes:
+        type: string
+      ipAddress:
+        type: string
+      userAgents:
+        type: string
+    type: object
   shortener.SearchRequest:
     properties:
       original_url:
         type: string
     type: object
+  shortener.ShortModel:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      id:
+        type: integer
+      originalUrl:
+        type: string
+      shortUrl:
+        type: string
+      updated_at:
+        type: string
+      userID:
+        minimum: 1
+        type: integer
+    required:
+    - originalUrl
+    - shortUrl
+    - userID
+    type: object
   shortener.ShortenRequest:
     properties:
       custom_short_url:
-        maxLength: 8
         type: string
       original_url:
         type: string
@@ -33,15 +108,25 @@ definitions:
       email:
         type: string
       password:
+        maxLength: 30
+        minLength: 5
         type: string
       user_name:
+        maxLength: 10
+        minLength: 3
         type: string
+    required:
+    - email
+    - password
+    - user_name
     type: object
   user.UserLoginRequest:
     properties:
       email:
         type: string
       password:
+        maxLength: 30
+        minLength: 5
         type: string
     required:
     - email
@@ -113,6 +198,103 @@ paths:
       summary: Redirect to the original URL
       tags:
       - shorts
+  /api/analytics:
+    get:
+      description: Returns all click analytics grouped by short URLs
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/analytics.Analysis'
+            type: array
+        "404":
+          description: No clicks found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to fetch analytics
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get all click analytics
+      tags:
+      - analytics
+    post:
+      consumes:
+      - application/json
+      description: Records a click for a short URL
+      parameters:
+      - description: Click information
+        in: body
+        name: click
+        required: true
+        schema:
+          $ref: '#/definitions/analytics.ClickRecord'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/analytics.ClickModel'
+        "400":
+          description: Invalid request body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to create click
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create a new click record
+      tags:
+      - analytics
+  /api/analytics/{shortUrl}:
+    get:
+      description: Returns click analytics for the given short URL
+      parameters:
+      - description: Short URL identifier
+        in: path
+        name: shortUrl
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/analytics.Analysis'
+        "400":
+          description: Missing shortUrl parameter
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: No clicks found for this short URL
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to fetch clicks
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get analytics for a specific short URL
+      tags:
+      - analytics
   /api/v1/shorts:
     get:
       description: Retrieve all shortened URLs

@@ -12,12 +12,12 @@ import (
 
 var validate = validator.New(validator.WithRequiredStructEnabled())
 
-type URLHandler struct {
+type ShortHandler struct {
 	service IShortService
 }
 
-func NewShortHandler(service IShortService) *URLHandler {
-	return &URLHandler{service: service}
+func NewShortHandler(service IShortService) *ShortHandler {
+	return &ShortHandler{service: service}
 }
 
 // GetAll godoc
@@ -28,7 +28,7 @@ func NewShortHandler(service IShortService) *URLHandler {
 // @Success 200 {array} ShortenResponse
 // @Failure 404 {object} map[string]string
 // @Router /api/v1/shorts [get]
-func (h *URLHandler) GetAll(c *fiber.Ctx) error {
+func (h *ShortHandler) GetAll(c *fiber.Ctx) error {
 	shortModels, err := h.service.GetAllURLs()
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
@@ -55,7 +55,7 @@ func (h *URLHandler) GetAll(c *fiber.Ctx) error {
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /api/v1/shorts [post]
-func (h *URLHandler) Shorten(c *fiber.Ctx) error {
+func (h *ShortHandler) Shorten(c *fiber.Ctx) error {
 	var req ShortenRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request"})
@@ -83,7 +83,7 @@ func (h *URLHandler) Shorten(c *fiber.Ctx) error {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Router /api/v1/shorts/{id} [get]
-func (h *URLHandler) GetById(c *fiber.Ctx) error {
+func (h *ShortHandler) GetById(c *fiber.Ctx) error {
 	paramId := c.Params("id")
 	id, err := strconv.ParseUint(paramId, 10, 64)
 	if err != nil {
@@ -108,7 +108,7 @@ func (h *URLHandler) GetById(c *fiber.Ctx) error {
 // @Success 200 {object} ShortenResponse
 // @Failure 404 {object} map[string]string
 // @Router /api/v1/shorts/short/{url} [get]
-func (h *URLHandler) GetByShortUrl(c *fiber.Ctx) error {
+func (h *ShortHandler) GetByShortUrl(c *fiber.Ctx) error {
 	shortUrl := c.Params("url")
 	shortModel, err := h.service.GetByShortUrl(shortUrl)
 	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
@@ -133,7 +133,7 @@ func (h *URLHandler) GetByShortUrl(c *fiber.Ctx) error {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /api/v1/shorts/search [post]
-func (h *URLHandler) Search(c *fiber.Ctx) error {
+func (h *ShortHandler) Search(c *fiber.Ctx) error {
 	var req SearchRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
@@ -164,7 +164,7 @@ func (h *URLHandler) Search(c *fiber.Ctx) error {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /{url} [get]
-func (h *URLHandler) RedirectToOriginalUrl(c *fiber.Ctx) error {
+func (h *ShortHandler) RedirectToOriginalUrl(c *fiber.Ctx) error {
 	short := c.Params("url")
 	shortModel, err := h.service.GetByShortUrl(short)
 	if err != nil {
@@ -185,7 +185,7 @@ func (h *URLHandler) RedirectToOriginalUrl(c *fiber.Ctx) error {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Router /api/v1/users/{id}/shorts [get]
-func (h *URLHandler) GetAllByUser(c *fiber.Ctx) error {
+func (h *ShortHandler) GetAllByUser(c *fiber.Ctx) error {
 	userIDParam := c.Params("id")
 	userID, err := strconv.Atoi(userIDParam)
 	if err != nil {
@@ -216,7 +216,7 @@ func (h *URLHandler) GetAllByUser(c *fiber.Ctx) error {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /api/v1/shorts/{id} [delete]
-func (h *URLHandler) Delete(c *fiber.Ctx) error {
+func (h *ShortHandler) Delete(c *fiber.Ctx) error {
 	shortIDParam := c.Params("id")
 	id, err := strconv.ParseUint(shortIDParam, 10, 64)
 	if err != nil {

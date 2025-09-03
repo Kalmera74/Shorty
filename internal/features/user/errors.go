@@ -1,48 +1,12 @@
 package user
 
-type UserError struct {
-	Msg string
-	Err error
-}
+import "errors"
 
-func (e *UserError) Error() string {
-	return e.Msg
-}
-func (e *UserError) Unwrap() error {
-	return e.Err
-}
+var (
+	ErrUserNotFound = errors.New("user not found")
 
-type UserNotFoundError struct {
-	Msg string
-	Err error
-}
-func (e *UserNotFoundError) Error() string {
-	return e.Msg
-}
-func (e *UserNotFoundError) Unwrap() error {
-	return e.Err
-}
-
-type InValidUserCreateRequestError struct {
-	Msg string
-	Err error
-}
-
-func (e *InValidUserCreateRequestError) Error() string {
-	return e.Msg
-}
-func (e *InValidUserCreateRequestError) Unwrap() error {
-	return e.Err
-}
-
-type InValidUserUpdateRequestError struct {
-	Msg string
-	Err error
-}
-
-func (e *InValidUserUpdateRequestError) Error() string {
-	return e.Msg
-}
-func (e *InValidUserUpdateRequestError) Unwrap() error {
-	return e.Err
-}
+	// Validation errors
+	ErrInvalidUserCreateRequest = errors.New("invalid user create request")
+	ErrInvalidUserUpdateRequest = errors.New("invalid user update request")
+	ErrInvalidCredentials       = errors.New("invalid credentials")
+)

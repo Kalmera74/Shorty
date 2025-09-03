@@ -7,7 +7,7 @@ import (
 	jwtware "github.com/gofiber/contrib/jwt"
 )
 
-func RegisterRoutes(app *fiber.App, handler *URLHandler) {
+func RegisterRoutes(app *fiber.App, handler *ShortHandler) {
 	api := app.Group("/api/v1")
 	shorts := api.Group("/shorts")
 

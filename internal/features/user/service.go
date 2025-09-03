@@ -18,17 +18,17 @@ type IUserService interface {
 	GetByEmail(email string) (*UserModel, error)
 }
 type userService struct {
-	UserStore UserStore
+	UserStore IUserRepository
 }
 
-func NewUserService(s UserStore) IUserService {
+func NewUserService(s IUserRepository) IUserService {
 	return &userService{s}
 }
 
 func (s *userService) GetAllUsers() ([]UserResponse, error) {
 	userModels, err := s.UserStore.GetAll()
 	if err != nil {
-		return nil, &UserError{Msg: fmt.Sprintf("Could not retrieve users. Reason: %v", err.Error()), Err: err}
+		return nil, fmt.Errorf("%w, %v", ErrUserNotFound, err)
 	}
 
 	users := make([]UserResponse, 0, len(userModels))
@@ -46,10 +46,10 @@ func (s *userService) GetUser(id types.UserId) (UserResponse, error) {
 
 	userModel, err := s.UserStore.Get(uint(id))
 	if err != nil {
-		if errors.Is(err, &UserNotFoundError{}) {
+		if errors.Is(err, ErrUserNotFound) {
 			return UserResponse{}, err
 		}
-		return UserResponse{}, &UserError{Msg: fmt.Sprintf("Could not retrieve user %d. Reason: %v", id, err.Error()), Err: err}
+		return UserResponse{}, fmt.Errorf("Could not retrieve user %d. Reason: %v", id, err.Error())
 	}
 
 	return UserResponse{
@@ -61,7 +61,6 @@ func (s *userService) GetUser(id types.UserId) (UserResponse, error) {
 func (s *userService) CreateUser(req UserCreateRequest) (UserResponse, error) {
 
 	existingUser, err := s.GetByEmail(req.Email)
-
 
 	if existingUser != nil {
 		return UserResponse{}, errors.New("The email is already in use")
@@ -81,10 +80,7 @@ func (s *userService) CreateUser(req UserCreateRequest) (UserResponse, error) {
 
 	createdUser, err := s.UserStore.Add(newUser)
 	if err != nil {
-		return UserResponse{}, &UserError{
-			Msg: fmt.Sprintf("Could not create user. Reason: %v", err.Error()),
-			Err: err,
-		}
+		return UserResponse{}, fmt.Errorf("Could not create user. Reason: %v", err.Error())
 	}
 
 	return UserResponse{
@@ -97,10 +93,7 @@ func (s *userService) UpdateUser(id types.UserId, req UserUpdateRequest) error {
 
 	userModel, err := s.UserStore.Get(uint(id))
 	if err != nil {
-		return &UserError{
-			Msg: fmt.Sprintf("Could not retrieve user %d. Reason: %v", id, err.Error()),
-			Err: err,
-		}
+		return fmt.Errorf("Could not retrieve user %d. Reason: %v", id, err.Error())
 	}
 
 	if req.UserName != nil {
@@ -112,10 +105,7 @@ func (s *userService) UpdateUser(id types.UserId, req UserUpdateRequest) error {
 
 	err = s.UserStore.Update(uint(id), userModel)
 	if err != nil {
-		return &UserError{
-			Msg: fmt.Sprintf("Could not update user %d. Reason: %v", id, err.Error()),
-			Err: err,
-		}
+		return fmt.Errorf("Could not update user %d. Reason: %v", id, err.Error())
 	}
 
 	return nil
@@ -124,7 +114,7 @@ func (s *userService) DeleteUser(id types.UserId) error {
 
 	err := s.UserStore.Delete(uint(id))
 	if err != nil {
-		return &UserError{Msg: fmt.Sprintf("Could not delete user %d. Reason: %v", id, err.Error()), Err: err}
+		return fmt.Errorf("Could not delete user %d. Reason: %v", id, err.Error())
 	}
 	return nil
 }
@@ -144,12 +134,12 @@ func (s *userService) VerifyCredentials(email, password string) (*UserModel, err
 	user, err := s.GetByEmail(email)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w, %v", ErrInvalidCredentials, err)
 	}
 
 	if security.CheckPassword(password, user.PasswordHash) {
 		return user, nil
 	}
 
-	return nil, errors.New("invalid credentials")
+	return nil, fmt.Errorf("%w", ErrInvalidCredentials)
 }
