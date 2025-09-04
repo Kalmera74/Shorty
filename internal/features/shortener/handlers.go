@@ -1,10 +1,13 @@
 package shortener
 
 import (
+	"encoding/json"
 	"errors"
 	"strconv"
+	"time"
 
 	"github.com/Kalmera74/Shorty/internal/types"
+	"github.com/Kalmera74/Shorty/pkg/messaging"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
@@ -13,11 +16,12 @@ import (
 var validate = validator.New(validator.WithRequiredStructEnabled())
 
 type ShortHandler struct {
-	service IShortService
+	service   IShortService
+	messaging messaging.IMessaging
 }
 
-func NewShortHandler(service IShortService) *ShortHandler {
-	return &ShortHandler{service: service}
+func NewShortHandler(service IShortService, messaging messaging.IMessaging) *ShortHandler {
+	return &ShortHandler{service: service, messaging: messaging}
 }
 
 // GetAll godoc
@@ -166,7 +170,6 @@ func (h *ShortHandler) Search(c *fiber.Ctx) error {
 // @Router /{url} [get]
 func (h *ShortHandler) RedirectToOriginalUrl(c *fiber.Ctx) error {
 
-	//TODO: Publish a rabbit message to handle the clicks data
 	short := c.Params("url")
 	shortModel, err := h.service.GetByShortUrl(short)
 	if err != nil {
@@ -175,6 +178,18 @@ func (h *ShortHandler) RedirectToOriginalUrl(c *fiber.Ctx) error {
 		}
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
+
+	go func() {
+		event := map[string]any{
+			"short_id":   shortModel.ID,
+			"ip":         c.IP(),
+			"user_agent": c.Get("User-Agent"),
+			"time_stamp": time.Now(),
+		}
+		payload, _ := json.Marshal(event)
+		_ = h.messaging.Publish("clicks", payload)
+	}()
+
 	return c.Redirect(shortModel.OriginalUrl, fiber.StatusMovedPermanently)
 }
 

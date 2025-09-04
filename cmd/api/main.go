@@ -8,6 +8,7 @@ import (
 	"github.com/Kalmera74/Shorty/internal/features/shortener"
 	"github.com/Kalmera74/Shorty/internal/features/user"
 	"github.com/Kalmera74/Shorty/pkg/auth"
+	"github.com/Kalmera74/Shorty/pkg/messaging"
 	"github.com/Kalmera74/Shorty/pkg/redis"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -45,9 +46,15 @@ func main() {
 
 	app.Get("/swagger/*", swagger.HandlerDefault)
 
-
 	auth.InitJwt()
 	redis.InitRedisClient()
+
+	mq, err := messaging.NewRabbitMQConnection()
+	if err != nil {
+		log.Fatalf("failed to connect to rabbitmq: %v", err)
+	}
+	mq.DeclareQueue("clicks")
+	defer mq.Close()
 
 	userStore := user.NewUserRepository(dbConn)
 	userService := user.NewUserService(userStore)
@@ -56,7 +63,7 @@ func main() {
 
 	shortStore := shortener.NewShortRepository(dbConn)
 	shortService := shortener.NewShortService(shortStore, redis.NewCacher(redis.Client))
-	shortHandler := shortener.NewShortHandler(shortService)
+	shortHandler := shortener.NewShortHandler(shortService, mq)
 	shortener.RegisterRoutes(app, shortHandler)
 
 	port := os.Getenv("PORT")

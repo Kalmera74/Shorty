@@ -17,7 +17,7 @@ type postgresClickRepository struct {
 	db *gorm.DB
 }
 
-func NewClickRepository(db *gorm.DB) IClickRepository {
+func NewAnalyticsRepository(db *gorm.DB) IClickRepository {
 	return &postgresClickRepository{db}
 }
 func (p *postgresClickRepository) Create(click ClickModel) (ClickModel, error) {

@@ -6,11 +6,11 @@ import (
 	"github.com/Kalmera74/Shorty/internal/types"
 )
 
-type ClickRecord struct {
-	ShortID    types.ShortId
-	ClickTimes time.Time
-	IpAddress  string
-	UserAgents string
+type ClickEvent struct {
+	ShortID   types.ShortId `json:"short_id"`
+	Ip        string        `json:"ip"`
+	UserAgent string        `json:"user_agent"`
+	TimeStamp time.Time     `json:"time_stamp"`
 }
 
 type Analysis struct {

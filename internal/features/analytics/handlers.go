@@ -79,16 +79,16 @@ func (h *analyticsHandler) GetAll(c *fiber.Ctx) error {
 // @Failure      500 {object} map[string]string "Failed to create click"
 // @Router       /api/analytics [post]
 func (h *analyticsHandler) Create(c *fiber.Ctx) error {
-	var record ClickRecord
+	var record ClickEvent
 	if err := c.BodyParser(&record); err != nil {
 		return c.Status(fiber.StatusBadRequest).
 			JSON(fiber.Map{"error": "invalid request body", "cause": err.Error()})
 	}
 
 	click := ClickModel{
-		IpAddress: record.IpAddress,
-		UserAgent: record.UserAgents,
-		CreatedAt: record.ClickTimes,
+		IpAddress: record.Ip,
+		UserAgent: record.UserAgent,
+		CreatedAt: record.TimeStamp,
 		ShortID:   record.ShortID,
 	}
 
