@@ -73,7 +73,7 @@ func (h *analyticsHandler) GetAll(c *fiber.Ctx) error {
 // @Tags         analytics
 // @Accept       json
 // @Produce      json
-// @Param        click body ClickRecord true "Click information"
+// @Param        click body ClickEvent true "Click information"
 // @Success      201 {object} ClickModel
 // @Failure      400 {object} map[string]string "Invalid request body"
 // @Failure      500 {object} map[string]string "Failed to create click"

@@ -14,7 +14,7 @@ func ConnectDB() (*gorm.DB, error) {
 	host := os.Getenv("POSTGRES_HOST")
 	port := os.Getenv("POSTGRES_PORT")
 	user := os.Getenv("POSTGRES_USER")
-	password := os.Getenv("POSTGRES_PASS")
+	password := os.Getenv("POSTGRES_PASSWORD")
 	dbname := os.Getenv("POSTGRES_DB")
 
 	dsn := fmt.Sprintf(

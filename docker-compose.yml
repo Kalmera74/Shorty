@@ -1,19 +1,37 @@
 services:
-  shorty:
+  shorty-api:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: shorty_app
+    container_name: shorty_api
     ports:
       - "8080:8080"
     env_file:
       - .env
     depends_on:
       postgres:
-        condition: service_healthy 
+        condition: service_healthy
       redis:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     restart: unless-stopped
+    command: ["./shorty-api"]
+
+  analytics-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: analytics_worker
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    command: ["./analytics-worker"]
 
   postgres:
     image: postgres:16-alpine
@@ -26,7 +44,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-    healthcheck: # Add a health check to the postgres container
+    healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
@@ -34,12 +52,12 @@ services:
     restart: unless-stopped
 
   redis:
-    image: docker.io/library/redis:7-alpine
+    image: redis:7-alpine
     container_name: shorty_redis
     ports:
       - "6379:6379"
     healthcheck:
-      test: ["CMD", "redis-cli","ping"]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 1s
       timeout: 3s
       retries: 5
@@ -47,7 +65,7 @@ services:
     restart: unless-stopped
 
   rabbitmq:
-    image: docker.io/library/rabbitmq:3.13-management-alpine
+    image: rabbitmq:3.13-management-alpine
     container_name: shorty_rabbit
     ports:
       - "5672:5672"
@@ -55,6 +73,12 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: rabbit_user
       RABBITMQ_DEFAULT_PASS: rabbit_pass
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmqctl status"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     restart: unless-stopped
 
 volumes:
