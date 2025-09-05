@@ -11,9 +11,12 @@ func RegisterRoutes(app *fiber.App, handler *ShortHandler) {
 	api := app.Group("/api/v1")
 	shorts := api.Group("/shorts")
 
-	shorts.Post("/", jwtware.New(jwtware.Config{
-		SigningKey: jwtware.SigningKey{Key: []byte(auth.JwtSecretKey)},
-	}), handler.Shorten)
+	authenticate := jwtware.New(
+		jwtware.Config{
+			SigningKey: jwtware.SigningKey{Key: []byte(auth.JwtSecretKey)},
+		})
+
+	shorts.Post("/", authenticate, handler.Shorten)
 
 	shorts.Get("/", handler.GetAll)
 	shorts.Post("/search", handler.Search)

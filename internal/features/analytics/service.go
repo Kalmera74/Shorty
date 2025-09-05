@@ -1,11 +1,14 @@
 package analytics
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+)
 
 type IAnalyticsService interface {
-	GetAll() ([]ClickModel, error)
-	GetAllByShortUrl(shortUrl string) ([]ClickModel, error)
-	Create(click ClickModel) (ClickModel, error)
+	GetAll(ctx context.Context) ([]ClickModel, error)
+	GetAllByShortUrl(ctx context.Context, shortUrl string) ([]ClickModel, error)
+	Create(ctx context.Context, click ClickModel) (ClickModel, error)
 }
 
 type analyticsService struct {
@@ -16,16 +19,16 @@ func NewAnalyticService(p IClickRepository) IAnalyticsService {
 	return &analyticsService{p}
 }
 
-func (s *analyticsService) Create(click ClickModel) (ClickModel, error) {
-	createdClick, err := s.Repository.Create(click)
+func (s *analyticsService) Create(ctx context.Context, click ClickModel) (ClickModel, error) {
+	createdClick, err := s.Repository.Create(ctx, click)
 	if err != nil {
 		return ClickModel{}, fmt.Errorf("%w: %v", ErrClickCreateFail, err)
 	}
 	return createdClick, nil
 }
 
-func (s *analyticsService) GetAll() ([]ClickModel, error) {
-	clicks, err := s.Repository.GetAll()
+func (s *analyticsService) GetAll(ctx context.Context) ([]ClickModel, error) {
+	clicks, err := s.Repository.GetAll(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -35,8 +38,8 @@ func (s *analyticsService) GetAll() ([]ClickModel, error) {
 	return clicks, nil
 }
 
-func (s *analyticsService) GetAllByShortUrl(shortUrl string) ([]ClickModel, error) {
-	clicks, err := s.Repository.GetAllByShortUrl(shortUrl)
+func (s *analyticsService) GetAllByShortUrl(ctx context.Context, shortUrl string) ([]ClickModel, error) {
+	clicks, err := s.Repository.GetAllByShortUrl(ctx, shortUrl)
 	if err != nil {
 		return nil, err
 	}

@@ -33,7 +33,7 @@ func NewShortHandler(service IShortService, messaging messaging.IMessaging) *Sho
 // @Failure 404 {object} map[string]string
 // @Router /api/v1/shorts [get]
 func (h *ShortHandler) GetAll(c *fiber.Ctx) error {
-	shortModels, err := h.service.GetAllURLs()
+	shortModels, err := h.service.GetAllURLs(c.Context(), )
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -67,7 +67,7 @@ func (h *ShortHandler) Shorten(c *fiber.Ctx) error {
 	if err := validate.Struct(req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
-	short, err := h.service.ShortenURL(req)
+	short, err := h.service.ShortenURL(c.Context(), req)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -93,7 +93,7 @@ func (h *ShortHandler) GetById(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
-	shortModel, err := h.service.GetById(types.ShortId(id))
+	shortModel, err := h.service.GetById(c.Context(), types.ShortId(id))
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -114,7 +114,7 @@ func (h *ShortHandler) GetById(c *fiber.Ctx) error {
 // @Router /api/v1/shorts/short/{url} [get]
 func (h *ShortHandler) GetByShortUrl(c *fiber.Ctx) error {
 	shortUrl := c.Params("url")
-	shortModel, err := h.service.GetByShortUrl(shortUrl)
+	shortModel, err := h.service.GetByShortUrl(c.Context(), shortUrl)
 	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Short not found"})
 	}
@@ -145,7 +145,7 @@ func (h *ShortHandler) Search(c *fiber.Ctx) error {
 	if err := validate.Struct(req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
-	shortModel, err := h.service.Search(req)
+	shortModel, err := h.service.Search(c.Context(), req)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Short not found"})
@@ -171,7 +171,7 @@ func (h *ShortHandler) Search(c *fiber.Ctx) error {
 func (h *ShortHandler) RedirectToOriginalUrl(c *fiber.Ctx) error {
 
 	short := c.Params("url")
-	shortModel, err := h.service.GetByShortUrl(short)
+	shortModel, err := h.service.GetByShortUrl(c.Context(), short)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Short not found"})
@@ -208,7 +208,7 @@ func (h *ShortHandler) GetAllByUser(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid user ID"})
 	}
-	shortModels, err := h.service.GetAllByUser(types.UserId(userID))
+	shortModels, err := h.service.GetAllByUser(c.Context(), types.UserId(userID))
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -239,7 +239,7 @@ func (h *ShortHandler) Delete(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
-	if err = h.service.DeleteURL(types.ShortId(id)); err != nil {
+	if err = h.service.DeleteURL(c.Context(), types.ShortId(id)); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 		}

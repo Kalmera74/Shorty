@@ -7,10 +7,16 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
+type IMessage interface {
+	Body() []byte
+	Ack() error
+	Nack() error
+}
+
 type IMessaging interface {
 	DeclareQueue(name string) error
 	Publish(queueName string, body []byte) error
-	Consume(queueName, consumer string, autoAck bool) (<-chan amqp.Delivery, error)
+	Consume(queueName, consumer string, autoAck bool) (<-chan IMessage, error)
 	Close()
 }
 
@@ -19,6 +25,23 @@ type RabbitMQ struct {
 	Channel *amqp.Channel
 }
 
+type rabbitMessage struct {
+	delivery amqp.Delivery
+}
+
+func (r *rabbitMessage) Body() []byte {
+	return r.delivery.Body
+}
+
+func (r *rabbitMessage) Ack() error {
+	return r.delivery.Ack(false)
+}
+
+func (r *rabbitMessage) Nack() error {
+	return r.delivery.Nack(false, true)
+}
+
+// NewRabbitMQConnection connects to RabbitMQ and returns *RabbitMQ
 func NewRabbitMQConnection() (*RabbitMQ, error) {
 	rabbitHost := os.Getenv("RABBITMQ_HOST")
 	rabbitPort := os.Getenv("RABBITMQ_PORT")
@@ -29,14 +52,11 @@ func NewRabbitMQConnection() (*RabbitMQ, error) {
 		return nil, fmt.Errorf("missing required RabbitMQ environment variables")
 	}
 
-	connectionString := fmt.Sprintf("amqp://%s:%s@%s:%s/",
-		rabbitUser,
-		rabbitPass,
-		rabbitHost,
-		rabbitPort,
+	connStr := fmt.Sprintf("amqp://%s:%s@%s:%s/",
+		rabbitUser, rabbitPass, rabbitHost, rabbitPort,
 	)
 
-	conn, err := amqp.Dial(connectionString)
+	conn, err := amqp.Dial(connStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to RabbitMQ: %w", err)
 	}
@@ -50,6 +70,7 @@ func NewRabbitMQConnection() (*RabbitMQ, error) {
 	return &RabbitMQ{Conn: conn, Channel: ch}, nil
 }
 
+// DeclareQueue declares a durable RabbitMQ queue
 func (r *RabbitMQ) DeclareQueue(name string) error {
 	_, err := r.Channel.QueueDeclare(
 		name,
@@ -57,15 +78,16 @@ func (r *RabbitMQ) DeclareQueue(name string) error {
 		false, // auto-delete
 		false, // exclusive
 		false, // no-wait
-		nil,   // args
+		nil,
 	)
 	return err
 }
 
+// Publish sends a message to a queue
 func (r *RabbitMQ) Publish(queueName string, body []byte) error {
 	return r.Channel.Publish(
-		"",        // default exchange
-		queueName, // routing key = queue name
+		"",
+		queueName,
 		false,
 		false,
 		amqp.Publishing{
@@ -75,18 +97,33 @@ func (r *RabbitMQ) Publish(queueName string, body []byte) error {
 	)
 }
 
-func (r *RabbitMQ) Consume(queueName, consumer string, autoAck bool) (<-chan amqp.Delivery, error) {
-	return r.Channel.Consume(
+// Consume starts consuming messages and wraps them in Message interface
+func (r *RabbitMQ) Consume(queueName, consumer string, autoAck bool) (<-chan IMessage, error) {
+	deliveries, err := r.Channel.Consume(
 		queueName,
-		consumer, // consumer name (can be empty string)
-		autoAck,  // auto acknowledge messages?
-		false,    // exclusive
-		false,    // no-local (deprecated)
-		false,    // no-wait
-		nil,      // args
+		consumer,
+		autoAck,
+		false,
+		false,
+		false,
+		nil,
 	)
+	if err != nil {
+		return nil, err
+	}
+
+	msgChan := make(chan IMessage)
+	go func() {
+		defer close(msgChan)
+		for d := range deliveries {
+			msgChan <- &rabbitMessage{delivery: d}
+		}
+	}()
+
+	return msgChan, nil
 }
 
+// Close closes the RabbitMQ connection and channel
 func (r *RabbitMQ) Close() {
 	if r.Channel != nil {
 		_ = r.Channel.Close()

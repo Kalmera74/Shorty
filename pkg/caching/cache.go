@@ -1,4 +1,4 @@
-package redis
+package caching
 
 import (
 	"context"
@@ -17,6 +17,7 @@ var Client *redis.Client
 type Cacher interface {
 	Set(ctx context.Context, key string, value interface{}, expiration time.Duration) error
 	Get(ctx context.Context, key string) (string, error)
+	Delete(ctx context.Context, key string) error
 }
 
 type RedisCacher struct {
@@ -32,7 +33,9 @@ func NewCacher(redisClient redis.Cmdable) Cacher {
 func (r *RedisCacher) Set(ctx context.Context, key string, value interface{}, exp time.Duration) error {
 	return r.Client.Set(ctx, key, value, exp).Err()
 }
-
+func (r *RedisCacher) Delete(ctx context.Context, key string) error {
+	return r.Client.Del(ctx, key).Err()
+}
 func (r *RedisCacher) Get(ctx context.Context, key string) (string, error) {
 	get := r.Client.Get(ctx, key)
 	return get.Result()

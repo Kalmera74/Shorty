@@ -24,7 +24,7 @@ func NewAnalyticsHandler(service IAnalyticsService) *analyticsHandler {
 // @Failure      500 {object} map[string]string "Failed to fetch analytics"
 // @Router       /api/analytics [get]
 func (h *analyticsHandler) GetAll(c *fiber.Ctx) error {
-	clickModels, err := h.service.GetAll()
+	clickModels, err := h.service.GetAll(c.Context())
 	if err != nil {
 		if errors.Is(err, ErrClicksNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
@@ -92,7 +92,7 @@ func (h *analyticsHandler) Create(c *fiber.Ctx) error {
 		ShortID:   record.ShortID,
 	}
 
-	createdClick, err := h.service.Create(click)
+	createdClick, err := h.service.Create(c.Context(), click)
 	if err != nil {
 		if errors.Is(err, ErrClickCreateFail) {
 			return c.Status(fiber.StatusInternalServerError).
@@ -122,7 +122,7 @@ func (h *analyticsHandler) GetAllByShortUrl(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "shortUrl parameter is required"})
 	}
 
-	clickModels, err := h.service.GetAllByShortUrl(shortUrl)
+	clickModels, err := h.service.GetAllByShortUrl(c.Context(), shortUrl)
 	if err != nil {
 		if errors.Is(err, ErrClickNotFound) {
 			return c.Status(fiber.StatusNotFound).

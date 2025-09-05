@@ -29,7 +29,7 @@ func NewUserHandler(service IUserService) *UserHandler {
 // @Failure 500 {object} map[string]string
 // @Router /api/v1/users [get]
 func (h *UserHandler) GetAllUsers(c *fiber.Ctx) error {
-	allUsers, err := h.service.GetAllUsers()
+	allUsers, err := h.service.GetAllUsers(c.Context())
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -54,7 +54,7 @@ func (h *UserHandler) GetUser(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid user ID"})
 	}
 
-	userResp, err := h.service.GetUser(types.UserId(id))
+	userResp, err := h.service.GetUser(c.Context(), types.UserId(id))
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err})
 	}
@@ -85,7 +85,7 @@ func (h *UserHandler) Login(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	user, err := h.service.VerifyCredentials(req.Email, req.Password)
+	user, err := h.service.VerifyCredentials(c.Context(), req.Email, req.Password)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid credentials"})
 	}
@@ -119,7 +119,7 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	createdUser, err := h.service.CreateUser(createReq)
+	createdUser, err := h.service.CreateUser(c.Context(), createReq)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -156,7 +156,7 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": reqErr.Error()})
 	}
 
-	if err := h.service.UpdateUser(types.UserId(id), updateReq); err != nil {
+	if err := h.service.UpdateUser(c.Context(), types.UserId(id), updateReq); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -179,7 +179,7 @@ func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid user ID"})
 	}
 
-	if err := h.service.DeleteUser(types.UserId(id)); err != nil {
+	if err := h.service.DeleteUser(c.Context(), types.UserId(id)); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 

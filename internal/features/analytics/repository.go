@@ -1,6 +1,7 @@
 package analytics
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -8,9 +9,9 @@ import (
 )
 
 type IClickRepository interface {
-	GetAll() ([]ClickModel, error)
-	GetAllByShortUrl(shortUrl string) ([]ClickModel, error)
-	Create(click ClickModel) (ClickModel, error)
+	GetAll(ctx context.Context) ([]ClickModel, error)
+	GetAllByShortUrl(ctx context.Context, shortUrl string) ([]ClickModel, error)
+	Create(ctx context.Context, click ClickModel) (ClickModel, error)
 }
 
 type postgresClickRepository struct {
@@ -20,16 +21,17 @@ type postgresClickRepository struct {
 func NewAnalyticsRepository(db *gorm.DB) IClickRepository {
 	return &postgresClickRepository{db}
 }
-func (p *postgresClickRepository) Create(click ClickModel) (ClickModel, error) {
-	if err := p.db.Create(&click).Error; err != nil {
+func (p *postgresClickRepository) Create(ctx context.Context, click ClickModel) (ClickModel, error) {
+	if err := p.db.WithContext(ctx).Create(&click).Error; err != nil {
 		return ClickModel{}, fmt.Errorf("%w: %v", ErrClickCreateFail, err)
 	}
 	return click, nil
 }
 
-func (p *postgresClickRepository) GetAll() ([]ClickModel, error) {
+func (p *postgresClickRepository) GetAll(ctx context.Context) ([]ClickModel, error) {
 	var clicks []ClickModel
 	if err := p.db.
+		WithContext(ctx).
 		Preload("Short").
 		Find(&clicks).Error; err != nil {
 		return nil, fmt.Errorf("failed to fetch clicks: %w", err)
@@ -40,10 +42,11 @@ func (p *postgresClickRepository) GetAll() ([]ClickModel, error) {
 	return clicks, nil
 }
 
-func (p *postgresClickRepository) GetAllByShortUrl(shortUrl string) ([]ClickModel, error) {
+func (p *postgresClickRepository) GetAllByShortUrl(ctx context.Context, shortUrl string) ([]ClickModel, error) {
 	var clicks []ClickModel
 
 	if err := p.db.
+		WithContext(ctx).
 		Joins("JOIN short_models ON short_models.id = click_models.short_id").
 		Where("short_models.short_url = ?", shortUrl).
 		Preload("Short").

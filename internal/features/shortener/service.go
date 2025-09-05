@@ -10,35 +10,33 @@ import (
 	"time"
 
 	"github.com/Kalmera74/Shorty/internal/types"
-	"github.com/Kalmera74/Shorty/pkg/redis"
+	"github.com/Kalmera74/Shorty/pkg/caching"
 )
 
 type IShortService interface {
-	ShortenURL(req ShortenRequest) (ShortModel, error)
-	GetById(id types.ShortId) (ShortModel, error)
-	GetByShortUrl(shortUrl string) (ShortModel, error)
-	GetByLongUrl(originalUrl string) (ShortModel, error)
-	Search(req SearchRequest) (ShortModel, error)
-	GetAllByUser(userID types.UserId) ([]ShortModel, error)
-	GetAllURLs() ([]ShortModel, error)
-	DeleteURL(shortID types.ShortId) error
+	ShortenURL(ctx context.Context, req ShortenRequest) (ShortModel, error)
+	GetById(ctx context.Context, id types.ShortId) (ShortModel, error)
+	GetByShortUrl(ctx context.Context, shortUrl string) (ShortModel, error)
+	GetByLongUrl(ctx context.Context, originalUrl string) (ShortModel, error)
+	Search(ctx context.Context, req SearchRequest) (ShortModel, error)
+	GetAllByUser(ctx context.Context, userID types.UserId) ([]ShortModel, error)
+	GetAllURLs(ctx context.Context) ([]ShortModel, error)
+	DeleteURL(ctx context.Context, shortID types.ShortId) error
 }
 type shortService struct {
 	store  ShortStore
-	cacher redis.Cacher
+	cacher caching.Cacher
 }
 
-func NewShortService(store ShortStore, cacher redis.Cacher) IShortService {
+func NewShortService(store ShortStore, cacher caching.Cacher) IShortService {
 	return &shortService{
 		store:  store,
 		cacher: cacher,
 	}
 }
 
-func (s *shortService) ShortenURL(req ShortenRequest) (ShortModel, error) {
+func (s *shortService) ShortenURL(ctx context.Context, req ShortenRequest) (ShortModel, error) {
 
-	//TODO: Update the user model to include the crated short
-	ctx := context.Background()
 	cachedShortID, err := s.cacher.Get(ctx, req.Url)
 	if err == nil && cachedShortID != "" {
 		id, _ := strconv.ParseUint(cachedShortID, 10, 64)
@@ -48,7 +46,7 @@ func (s *shortService) ShortenURL(req ShortenRequest) (ShortModel, error) {
 		}
 	}
 
-	existingShort, err := s.GetByLongUrl(req.Url)
+	existingShort, err := s.GetByLongUrl(ctx, req.Url)
 	if err == nil {
 		s.cacher.Set(ctx, req.Url, existingShort.ID, time.Minute*5)
 		s.cacher.Set(ctx, existingShort.ShortUrl, existingShort.OriginalUrl, time.Minute*5)
@@ -82,22 +80,20 @@ func (s *shortService) ShortenURL(req ShortenRequest) (ShortModel, error) {
 	return short, nil
 
 }
-func (s *shortService) GetById(id types.ShortId) (ShortModel, error) {
+func (s *shortService) GetById(ctx context.Context, id types.ShortId) (ShortModel, error) {
 
 	short, err := s.store.GetById(id)
 	if err != nil {
 		return ShortModel{}, err
 	}
 
-	ctx := context.Background()
 	s.cacher.Set(ctx, short.OriginalUrl, short.ID, time.Minute*5)
 
 	return short, nil
 
 }
-func (s *shortService) GetByShortUrl(shortUrl string) (ShortModel, error) {
+func (s *shortService) GetByShortUrl(ctx context.Context, shortUrl string) (ShortModel, error) {
 
-	ctx := context.Background()
 	cachedShort, err := s.cacher.Get(ctx, shortUrl)
 	if err == nil && cachedShort != "" {
 
@@ -121,7 +117,7 @@ func (s *shortService) GetByShortUrl(shortUrl string) (ShortModel, error) {
 
 	return short, nil
 }
-func (s *shortService) GetByLongUrl(originalUrl string) (ShortModel, error) {
+func (s *shortService) GetByLongUrl(ctx context.Context, originalUrl string) (ShortModel, error) {
 
 	url, err := s.store.GetByLongUrl(originalUrl)
 	if err != nil {
@@ -129,7 +125,7 @@ func (s *shortService) GetByLongUrl(originalUrl string) (ShortModel, error) {
 	}
 	return url, nil
 }
-func (s *shortService) Search(req SearchRequest) (ShortModel, error) {
+func (s *shortService) Search(ctx context.Context, req SearchRequest) (ShortModel, error) {
 	if req.OriginalUrl != nil {
 		url, err := s.store.GetByLongUrl(*req.OriginalUrl)
 		if err != nil {
@@ -141,7 +137,7 @@ func (s *shortService) Search(req SearchRequest) (ShortModel, error) {
 
 	return ShortModel{}, fmt.Errorf("%w: no search parameters provided", ErrInvalidShortenRequest)
 }
-func (s *shortService) GetAllByUser(userID types.UserId) ([]ShortModel, error) {
+func (s *shortService) GetAllByUser(ctx context.Context, userID types.UserId) ([]ShortModel, error) {
 
 	shorts, err := s.store.GetAllByUser(userID)
 	if err != nil {
@@ -150,18 +146,32 @@ func (s *shortService) GetAllByUser(userID types.UserId) ([]ShortModel, error) {
 
 	return shorts, nil
 }
-func (s *shortService) GetAllURLs() ([]ShortModel, error) {
+func (s *shortService) GetAllURLs(ctx context.Context) ([]ShortModel, error) {
 	allShorts, err := s.store.GetAll()
 	if err != nil {
 		return nil, err
 	}
 	return allShorts, nil
 }
-func (s *shortService) DeleteURL(shortID types.ShortId) error {
+func (s *shortService) DeleteURL(ctx context.Context, shortID types.ShortId) error {
 
+	short, err := s.GetById(ctx, shortID)
+	if err != nil {
+		return err
+	}
 	if err := s.store.Delete(shortID); err != nil {
 		return err
 	}
 
+	s.cacher.Delete(ctx, short.ShortUrl)
+	s.cacher.Delete(ctx, short.OriginalUrl)
 	return nil
+}
+
+func shortByShortUrlKey(shortUrl string) string {
+	return fmt.Sprintf("short:byShortUrl:%s", shortUrl)
+}
+
+func shortByOriginalUrlKey(originalUrl string) string {
+	return fmt.Sprintf("short:byOriginalUrl:%s", originalUrl)
 }

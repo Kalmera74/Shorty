@@ -1,6 +1,7 @@
 package user
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -15,32 +16,32 @@ type MockUserRepository struct {
 	mock.Mock
 }
 
-func (m *MockUserRepository) GetAll() ([]UserModel, error) {
+func (m *MockUserRepository) GetAll(ctx context.Context) ([]UserModel, error) {
 	args := m.Called()
 	return args.Get(0).([]UserModel), args.Error(1)
 }
 
-func (m *MockUserRepository) Get(id uint) (UserModel, error) {
+func (m *MockUserRepository) Get(ctx context.Context, id uint) (UserModel, error) {
 	args := m.Called(id)
 	return args.Get(0).(UserModel), args.Error(1)
 }
 
-func (m *MockUserRepository) Add(u UserModel) (UserModel, error) {
+func (m *MockUserRepository) Add(ctx context.Context, u UserModel) (UserModel, error) {
 	args := m.Called(u)
 	return args.Get(0).(UserModel), args.Error(1)
 }
 
-func (m *MockUserRepository) Update(id uint, u UserModel) error {
+func (m *MockUserRepository) Update(ctx context.Context, id uint, u UserModel) error {
 	args := m.Called(id, u)
 	return args.Error(0)
 }
 
-func (m *MockUserRepository) Delete(id uint) error {
+func (m *MockUserRepository) Delete(ctx context.Context, id uint) error {
 	args := m.Called(id)
 	return args.Error(0)
 }
 
-func (m *MockUserRepository) GetByEmail(email string) (UserModel, error) {
+func (m *MockUserRepository) GetByEmail(ctx context.Context, email string) (UserModel, error) {
 	args := m.Called(email)
 	return args.Get(0).(UserModel), args.Error(1)
 }
@@ -54,7 +55,7 @@ func TestGetAllUsers_Success(t *testing.T) {
 
 	svc := NewUserService(mockRepo)
 
-	users, err := svc.GetAllUsers()
+	users, err := svc.GetAllUsers(context.Background())
 
 	assert.NoError(t, err)
 	assert.Len(t, users, 1)
@@ -68,7 +69,7 @@ func TestGetUser_NotFound(t *testing.T) {
 
 	svc := NewUserService(mockRepo)
 
-	_, err := svc.GetUser(types.UserId(99))
+	_, err := svc.GetUser(context.Background(), types.UserId(99))
 
 	assert.Error(t, err)
 }
@@ -88,7 +89,7 @@ func TestCreateUser_Success(t *testing.T) {
 
 	svc := NewUserService(mockRepo)
 
-	resp, err := svc.CreateUser(req)
+	resp, err := svc.CreateUser(context.Background(), req)
 
 	assert.NoError(t, err)
 	assert.Equal(t, "bob", resp.UserName)
@@ -105,7 +106,7 @@ func TestVerifyCredentials_Success(t *testing.T) {
 
 	svc := NewUserService(mockRepo)
 
-	usr, err := svc.VerifyCredentials("eve@test.com", "mypassword")
+	usr, err := svc.VerifyCredentials(context.Background(), "eve@test.com", "mypassword")
 
 	assert.NoError(t, err)
 	assert.NotNil(t, usr)
@@ -121,7 +122,7 @@ func TestVerifyCredentials_InvalidPassword(t *testing.T) {
 
 	svc := NewUserService(mockRepo)
 
-	usr, err := svc.VerifyCredentials("john@test.com", "wrongpassword")
+	usr, err := svc.VerifyCredentials(context.Background(), "john@test.com", "wrongpassword")
 
 	assert.Error(t, err)
 	assert.Nil(t, usr)
