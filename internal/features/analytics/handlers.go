@@ -70,7 +70,7 @@ func (h *analyticsHandler) GetAllAnalytics(c *fiber.Ctx) error {
 // CreateClick godoc
 // @Summary      CreateClick a new click record
 // @Description  Records a click for a short URL
-// @Tags         analytics
+// @Tags         clicks
 // @Accept       json
 // @Produce      json
 // @Param        click body ClickEvent true "Click information"
@@ -156,7 +156,7 @@ func (h *analyticsHandler) GetAllAnalyticsByShortUrl(c *fiber.Ctx) error {
 // GetAllClicks godoc
 // @Summary      Get all click records
 // @Description  Returns all individual click records (not grouped)
-// @Tags         analytics
+// @Tags         clicks
 // @Produce      json
 // @Success      200 {array} ClickModel
 // @Failure      404 {object} map[string]string "No clicks found"
@@ -184,7 +184,7 @@ func (h *analyticsHandler) GetAllClicks(c *fiber.Ctx) error {
 // GetClickById godoc
 // @Summary      Get a click record by ID
 // @Description  Returns a single click record based on its ID
-// @Tags         analytics
+// @Tags         clicks
 // @Produce      json
 // @Param        id path int true "Click ID"
 // @Success      200 {object} ClickModel

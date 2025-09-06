@@ -67,7 +67,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "analytics"
+                    "clicks"
                 ],
                 "summary": "CreateClick a new click record",
                 "parameters": [
@@ -172,7 +172,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "analytics"
+                    "clicks"
                 ],
                 "summary": "Get all click records",
                 "responses": {
@@ -213,7 +213,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "analytics"
+                    "clicks"
                 ],
                 "summary": "Get a click record by ID",
                 "parameters": [

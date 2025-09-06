@@ -261,7 +261,7 @@ paths:
             type: object
       summary: CreateClick a new click record
       tags:
-      - analytics
+      - clicks
   /api/v1/analytics/{shortUrl}:
     get:
       description: Returns click analytics for the given short URL
@@ -325,7 +325,7 @@ paths:
             type: object
       summary: Get all click records
       tags:
-      - analytics
+      - clicks
   /api/v1/clicks/{id}:
     get:
       description: Returns a single click record based on its ID
@@ -362,7 +362,7 @@ paths:
             type: object
       summary: Get a click record by ID
       tags:
-      - analytics
+      - clicks
   /api/v1/login:
     post:
       consumes:

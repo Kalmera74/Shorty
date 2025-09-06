@@ -61,7 +61,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "analytics"
+                    "clicks"
                 ],
                 "summary": "CreateClick a new click record",
                 "parameters": [
@@ -166,7 +166,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "analytics"
+                    "clicks"
                 ],
                 "summary": "Get all click records",
                 "responses": {
@@ -207,7 +207,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "analytics"
+                    "clicks"
                 ],
                 "summary": "Get a click record by ID",
                 "parameters": [
