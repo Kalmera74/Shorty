@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"strconv"
 	"testing"
 	"time"
 
@@ -19,31 +18,24 @@ type MockStore struct {
 	mock.Mock
 }
 
-func (m *MockStore) Create(url ShortModel) (ShortModel, error) {
+func (m *MockStore) Create(ctx context.Context, url ShortModel) (ShortModel, error) {
 	args := m.Called(url)
 	return args.Get(0).(ShortModel), args.Error(1)
 }
-func (m *MockStore) GetById(id types.ShortId) (ShortModel, error) {
+func (m *MockStore) GetById(ctx context.Context, id types.ShortId) (ShortModel, error) {
 	args := m.Called(id)
 	return args.Get(0).(ShortModel), args.Error(1)
 }
-func (m *MockStore) GetByShortUrl(shortUrl string) (ShortModel, error) {
-	args := m.Called(shortUrl)
-	return args.Get(0).(ShortModel), args.Error(1)
-}
-func (m *MockStore) GetByLongUrl(longUrl string) (ShortModel, error) {
-	args := m.Called(longUrl)
-	return args.Get(0).(ShortModel), args.Error(1)
-}
-func (m *MockStore) GetAllByUser(userId types.UserId) ([]ShortModel, error) {
-	args := m.Called(userId)
+
+func (m *MockStore) Search(ctx context.Context, search SearchRequest) ([]ShortModel, error) {
+	args := m.Called(search)
 	return args.Get(0).([]ShortModel), args.Error(1)
 }
-func (m *MockStore) GetAll() ([]ShortModel, error) {
+func (m *MockStore) GetAll(ctx context.Context) ([]ShortModel, error) {
 	args := m.Called()
 	return args.Get(0).([]ShortModel), args.Error(1)
 }
-func (m *MockStore) Delete(id types.ShortId) error {
+func (m *MockStore) Delete(ctx context.Context, id types.ShortId) error {
 	args := m.Called(id)
 	return args.Error(0)
 }
@@ -71,41 +63,36 @@ func (m *MockRedis) Delete(ctx context.Context, key string) error {
 }
 
 // ShortenURL Tests //
-func TestShortenURL_Miss_Cache_Miss_DB(t *testing.T) {
+func TestShortenURL_Hit_DB(t *testing.T) {
 	mockStore := new(MockStore)
-	mockRedis := new(MockRedis)
 
 	req := ShortenRequest{
 		UserID: 1,
 		Url:    "https://example.com",
 	}
 
-	expectedShort := ShortModel{
-		ID:          1,
-		UserID:      1,
-		OriginalUrl: "https://example.com",
-		ShortUrl:    "12345678",
+	expectedShort := []ShortModel{
+		{
+			ID:          1,
+			UserID:      1,
+			OriginalUrl: "https://example.com",
+			ShortUrl:    "12345678",
+		},
 	}
 
-	mockRedis.On("Get", mock.Anything, req.Url).Return("", redis.Nil)
-	mockStore.On("GetByLongUrl", mock.Anything).Return(ShortModel{}, ErrShortNotFound)
-	mockStore.On("Create", mock.Anything).Return(expectedShort, nil)
-	mockRedis.On("Set", mock.Anything, req.Url, expectedShort.ID, time.Minute*5).Return(nil)
-	mockRedis.On("Set", mock.Anything, expectedShort.ShortUrl, mock.Anything, time.Minute*5).Return(nil)
+	mockStore.On("Search", mock.Anything, mock.Anything).Return(expectedShort, nil)
 
-	service := NewShortService(mockStore, mockRedis)
+	service := NewShortService(mockStore, nil)
 	result, err := service.ShortenURL(nil, req)
 
 	assert.NoError(t, err)
-	assert.Equal(t, expectedShort.ID, result.ID)
+	assert.Equal(t, expectedShort[0].ID, result.ID)
 
 	mockStore.AssertExpectations(t)
-	mockRedis.AssertExpectations(t)
 }
 
-func TestShortenURL_Hit_Cache_Hit_DB(t *testing.T) {
+func TestShortURL_Miss_DB(t *testing.T) {
 	mockStore := new(MockStore)
-	mockRedis := new(MockRedis)
 
 	req := ShortenRequest{
 		UserID: 1,
@@ -119,48 +106,16 @@ func TestShortenURL_Hit_Cache_Hit_DB(t *testing.T) {
 		ShortUrl:    "12345678",
 	}
 
-	mockRedis.On("Get", mock.Anything, req.Url).Return(strconv.Itoa(int(expectedShort.ID)), nil)
-	mockStore.On("GetById", types.ShortId(expectedShort.ID)).Return(expectedShort, nil)
+	mockStore.On("Search", mock.Anything, mock.Anything).Return([]ShortModel{}, ErrShortNotFound)
+	mockStore.On("Create", mock.Anything, mock.Anything).Return(expectedShort, nil)
 
-	service := NewShortService(mockStore, mockRedis)
+	service := NewShortService(mockStore, nil)
 	result, err := service.ShortenURL(nil, req)
 
 	assert.NoError(t, err)
 	assert.Equal(t, expectedShort.ID, result.ID)
 
 	mockStore.AssertExpectations(t)
-	mockRedis.AssertExpectations(t)
-}
-
-func TestShortURL_Miss_Cache_Hit_DB(t *testing.T) {
-	mockStore := new(MockStore)
-	mockRedis := new(MockRedis)
-
-	req := ShortenRequest{
-		UserID: 1,
-		Url:    "https://example.com",
-	}
-
-	expectedShort := ShortModel{
-		ID:          1,
-		UserID:      1,
-		OriginalUrl: "https://example.com",
-		ShortUrl:    "12345678",
-	}
-
-	mockRedis.On("Get", mock.Anything, req.Url).Return("", redis.Nil)
-	mockStore.On("GetByLongUrl", req.Url).Return(expectedShort, nil)
-	mockRedis.On("Set", mock.Anything, req.Url, expectedShort.ID, time.Minute*5).Return(nil)
-	mockRedis.On("Set", mock.Anything, expectedShort.ShortUrl, expectedShort.OriginalUrl, time.Minute*5).Return(nil)
-
-	service := NewShortService(mockStore, mockRedis)
-	result, err := service.ShortenURL(nil, req)
-
-	assert.NoError(t, err)
-	assert.Equal(t, expectedShort.ID, result.ID)
-
-	mockStore.AssertExpectations(t)
-	mockRedis.AssertExpectations(t)
 }
 
 func TestShortenURL_New_StoreCreateFails(t *testing.T) {
@@ -394,7 +349,7 @@ func TestGetAllURLs_Found(t *testing.T) {
 	expectedShorts := []ShortModel{{ID: 1}, {ID: 2}}
 
 	mockStore.On("GetAll").Return(expectedShorts, nil)
-	result, err := service.GetAllURLs(nil)
+	result, err := service.GetAll(nil)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedShorts, result)
 	mockStore.AssertExpectations(t)
@@ -405,7 +360,7 @@ func TestGetAllURLs_StoreError(t *testing.T) {
 	service := NewShortService(mockStore, nil)
 	mockStore.On("GetAll").Return([]ShortModel(nil), errors.New("database error"))
 
-	_, err := service.GetAllURLs(nil)
+	_, err := service.GetAll(nil)
 	assert.Error(t, err)
 	assert.EqualError(t, err, "database error")
 	mockStore.AssertExpectations(t)
@@ -442,7 +397,6 @@ func TestDeleteURL_StoreError(t *testing.T) {
 
 	mockRedis.On("Set", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 	mockRedis.On("Delete", mock.Anything, mock.Anything).Return(nil)
-
 
 	err := service.DeleteURL(nil, shortID)
 	assert.Error(t, err)

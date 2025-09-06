@@ -1,9 +1,11 @@
 package shortener
 
+import "github.com/Kalmera74/Shorty/internal/types"
+
 type ShortenRequest struct {
-	UserID         uint    `json:"user_id" validate:"required,numeric,min=1"`
-	Url            string  `json:"original_url" validate:"required,url"`
-	CustomShortUrl *string `json:"custom_short_url,omitempty"`
+	UserID         types.UserId `json:"user_id" validate:"required,numeric,min=1"`
+	Url            string       `json:"original_url" validate:"required,url"`
+	CustomShortUrl *string      `json:"custom_short_url,omitempty"`
 }
 type ShortenResponse struct {
 	Id          uint   `json:"id"`
@@ -12,5 +14,7 @@ type ShortenResponse struct {
 }
 
 type SearchRequest struct {
-	OriginalUrl *string `json:"original_url,omitempty" validate:"omitempty,url"`
+	OriginalUrl *string       `json:"original_url,omitempty"`
+	UserId      *types.UserId `json:"user_id,omitempty"`
+	ShortUrl    *string       `json:"short_url,omitempty"`
 }

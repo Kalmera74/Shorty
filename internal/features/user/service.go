@@ -19,7 +19,7 @@ type IUserService interface {
 	GetByEmail(ctx context.Context, email string) (*UserModel, error)
 }
 type userService struct {
-	UserStore IUserRepository
+	Repository IUserRepository
 }
 
 func NewUserService(s IUserRepository) IUserService {
@@ -27,7 +27,7 @@ func NewUserService(s IUserRepository) IUserService {
 }
 
 func (s *userService) GetAllUsers(ctx context.Context) ([]UserResponse, error) {
-	userModels, err := s.UserStore.GetAll(ctx)
+	userModels, err := s.Repository.GetAll(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("%w, %v", ErrUserNotFound, err)
 	}
@@ -45,7 +45,7 @@ func (s *userService) GetAllUsers(ctx context.Context) ([]UserResponse, error) {
 }
 func (s *userService) GetUser(ctx context.Context, id types.UserId) (UserResponse, error) {
 
-	userModel, err := s.UserStore.Get(ctx,uint(id))
+	userModel, err := s.Repository.Get(ctx,uint(id))
 	if err != nil {
 		if errors.Is(err, ErrUserNotFound) {
 			return UserResponse{}, err
@@ -79,7 +79,7 @@ func (s *userService) CreateUser(ctx context.Context, req UserCreateRequest) (Us
 		PasswordHash: hasPss,
 	}
 
-	createdUser, err := s.UserStore.Add(ctx,newUser)
+	createdUser, err := s.Repository.Add(ctx,newUser)
 	if err != nil {
 		return UserResponse{}, fmt.Errorf("Could not create user. Reason: %v", err.Error())
 	}
@@ -92,7 +92,7 @@ func (s *userService) CreateUser(ctx context.Context, req UserCreateRequest) (Us
 }
 func (s *userService) UpdateUser(ctx context.Context, id types.UserId, req UserUpdateRequest) error {
 
-	userModel, err := s.UserStore.Get(ctx,uint(id))
+	userModel, err := s.Repository.Get(ctx,uint(id))
 	if err != nil {
 		return fmt.Errorf("Could not retrieve user %d. Reason: %v", id, err.Error())
 	}
@@ -104,7 +104,7 @@ func (s *userService) UpdateUser(ctx context.Context, id types.UserId, req UserU
 		userModel.Email = *req.Email
 	}
 
-	err = s.UserStore.Update(ctx,uint(id), userModel)
+	err = s.Repository.Update(ctx,uint(id), userModel)
 	if err != nil {
 		return fmt.Errorf("Could not update user %d. Reason: %v", id, err.Error())
 	}
@@ -113,7 +113,7 @@ func (s *userService) UpdateUser(ctx context.Context, id types.UserId, req UserU
 }
 func (s *userService) DeleteUser(ctx context.Context, id types.UserId) error {
 
-	err := s.UserStore.Delete(ctx,uint(id))
+	err := s.Repository.Delete(ctx,uint(id))
 	if err != nil {
 		return fmt.Errorf("Could not delete user %d. Reason: %v", id, err.Error())
 	}
@@ -121,7 +121,7 @@ func (s *userService) DeleteUser(ctx context.Context, id types.UserId) error {
 }
 func (s *userService) GetByEmail(ctx context.Context, email string) (*UserModel, error) {
 
-	user, err := s.UserStore.GetByEmail(ctx,email)
+	user, err := s.Repository.GetByEmail(ctx,email)
 
 	if err != nil {
 		return nil, err

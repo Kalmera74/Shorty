@@ -73,7 +73,7 @@ func (h *UserHandler) GetUser(c *fiber.Ctx) error {
 // @Failure      400 {object} map[string]string "Invalid request body"
 // @Failure      401 {object} map[string]string "Invalid credentials"
 // @Failure      500 {object} map[string]string "Could not create token"
-// @Router       /api/v1/users/login [post]
+// @Router       /api/v1/login [post]
 func (h *UserHandler) Login(c *fiber.Ctx) error {
 	var req UserLoginRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -107,7 +107,7 @@ func (h *UserHandler) Login(c *fiber.Ctx) error {
 // @Success 200 {object} UserResponse
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
-// @Router /api/v1/users/{id} [get]
+// @Router /api/v1/register [get]
 func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 	var createReq UserCreateRequest
 	if err := c.BodyParser(&createReq); err != nil {

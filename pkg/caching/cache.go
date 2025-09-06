@@ -11,10 +11,7 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-// TODO: Would be better to be DI instead of global
-var Client *redis.Client
-
-type Cacher interface {
+type ICacher interface {
 	Set(ctx context.Context, key string, value interface{}, expiration time.Duration) error
 	Get(ctx context.Context, key string) (string, error)
 	Delete(ctx context.Context, key string) error
@@ -24,23 +21,7 @@ type RedisCacher struct {
 	Client redis.Cmdable
 }
 
-func NewCacher(redisClient redis.Cmdable) Cacher {
-	return &RedisCacher{
-		Client: redisClient,
-	}
-}
-
-func (r *RedisCacher) Set(ctx context.Context, key string, value interface{}, exp time.Duration) error {
-	return r.Client.Set(ctx, key, value, exp).Err()
-}
-func (r *RedisCacher) Delete(ctx context.Context, key string) error {
-	return r.Client.Del(ctx, key).Err()
-}
-func (r *RedisCacher) Get(ctx context.Context, key string) (string, error) {
-	get := r.Client.Get(ctx, key)
-	return get.Result()
-}
-func InitRedisClient() *redis.Client {
+func NewCacher() ICacher {
 	redisHost := os.Getenv("REDIS_HOST")
 	redisPort := os.Getenv("REDIS_PORT")
 	redisDBStr := os.Getenv("REDIS_DB")
@@ -58,15 +39,27 @@ func InitRedisClient() *redis.Client {
 		redisDB = 0
 	}
 
-	Client = redis.NewClient(&redis.Options{
+	client := redis.NewClient(&redis.Options{
 		Addr: redisAddr,
 		DB:   redisDB,
 	})
 
-	_, err = Client.Ping(context.Background()).Result()
+	_, err = client.Ping(context.Background()).Result()
 	if err != nil {
 		log.Fatalf("Could not connect to Redis at %s: %v", redisAddr, err)
 	}
+	return &RedisCacher{
+		Client: client,
+	}
+}
 
-	return Client
+func (r *RedisCacher) Set(ctx context.Context, key string, value interface{}, exp time.Duration) error {
+	return r.Client.Set(ctx, key, value, exp).Err()
+}
+func (r *RedisCacher) Delete(ctx context.Context, key string) error {
+	return r.Client.Del(ctx, key).Err()
+}
+func (r *RedisCacher) Get(ctx context.Context, key string) (string, error) {
+	get := r.Client.Get(ctx, key)
+	return get.Result()
 }

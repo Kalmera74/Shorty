@@ -52,7 +52,7 @@ func main() {
 	app.Get("/swagger/*", swagger.HandlerDefault)
 
 	auth.InitJwt()
-	caching.InitRedisClient()
+	cacher := caching.NewCacher()
 
 	mq, err := messaging.NewRabbitMQConnection()
 	if err != nil {
@@ -74,7 +74,7 @@ func main() {
 	user.RegisterRoutes(app, userHandler)
 
 	shortStore := shortener.NewShortRepository(dbConn)
-	shortService := shortener.NewShortService(shortStore, caching.NewCacher(caching.Client))
+	shortService := shortener.NewShortService(shortStore, cacher)
 	shortHandler := shortener.NewShortHandler(shortService, mq)
 	shortener.RegisterRoutes(app, shortHandler)
 

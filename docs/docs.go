@@ -69,7 +69,7 @@ const docTemplate = `{
                 "tags": [
                     "analytics"
                 ],
-                "summary": "Create a new click record",
+                "summary": "CreateClick a new click record",
                 "parameters": [
                     {
                         "description": "Click information",
@@ -77,7 +77,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/analytics.ClickRecord"
+                            "$ref": "#/definitions/analytics.ClickEvent"
                         }
                     }
                 ],
@@ -99,6 +99,103 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Failed to create click",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/analytics/clicks": {
+            "get": {
+                "description": "Returns all individual click records (not grouped)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "analytics"
+                ],
+                "summary": "Get all click records",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/analytics.ClickModel"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No clicks found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to fetch clicks",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/analytics/clicks/{id}": {
+            "get": {
+                "description": "Returns a single click record based on its ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "analytics"
+                ],
+                "summary": "Get a click record by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Click ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/analytics.ClickModel"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID parameter",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Click not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to fetch click",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -155,6 +252,114 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Failed to fetch clicks",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/login": {
+            "post": {
+                "description": "Authenticate user with email and password, returns a JWT token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "User login",
+                "parameters": [
+                    {
+                        "description": "User login credentials",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user.UserLoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "JWT token successfully generated",
+                        "schema": {
+                            "$ref": "#/definitions/user.UserLoginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid credentials",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Could not create token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/register": {
+            "get": {
+                "description": "Fetch a user given their ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get a user by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user.UserResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -249,7 +454,7 @@ const docTemplate = `{
         },
         "/api/v1/shorts/search": {
             "post": {
-                "description": "Search using filters (URL, etc.)",
+                "description": "Search using filters (URL, user ID, etc.)",
                 "consumes": [
                     "application/json"
                 ],
@@ -259,7 +464,7 @@ const docTemplate = `{
                 "tags": [
                     "shorts"
                 ],
-                "summary": "Search for a shortened URL",
+                "summary": "Search for shortened URLs",
                 "parameters": [
                     {
                         "description": "Search criteria",
@@ -275,7 +480,10 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/shortener.ShortenResponse"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/shortener.ShortenResponse"
+                            }
                         }
                     },
                     "400": {
@@ -526,113 +734,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/users/login": {
-            "post": {
-                "description": "Authenticate user with email and password, returns a JWT token",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "auth"
-                ],
-                "summary": "User login",
-                "parameters": [
-                    {
-                        "description": "User login credentials",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/user.UserLoginRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "JWT token successfully generated",
-                        "schema": {
-                            "$ref": "#/definitions/user.UserLoginResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request body",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Invalid credentials",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Could not create token",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/api/v1/users/{id}": {
-            "get": {
-                "description": "Fetch a user given their ID",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Get a user by ID",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "User ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/user.UserResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            },
             "put": {
                 "description": "Update username or email of a user",
                 "consumes": [
@@ -841,6 +943,23 @@ const docTemplate = `{
                 }
             }
         },
+        "analytics.ClickEvent": {
+            "type": "object",
+            "properties": {
+                "ip": {
+                    "type": "string"
+                },
+                "short_id": {
+                    "type": "integer"
+                },
+                "time_stamp": {
+                    "type": "string"
+                },
+                "user_agent": {
+                    "type": "string"
+                }
+            }
+        },
         "analytics.ClickModel": {
             "type": "object",
             "required": [
@@ -875,23 +994,6 @@ const docTemplate = `{
                 }
             }
         },
-        "analytics.ClickRecord": {
-            "type": "object",
-            "properties": {
-                "clickTimes": {
-                    "type": "string"
-                },
-                "ipAddress": {
-                    "type": "string"
-                },
-                "shortID": {
-                    "type": "integer"
-                },
-                "userAgents": {
-                    "type": "string"
-                }
-            }
-        },
         "analytics.Usage": {
             "type": "object",
             "properties": {
@@ -911,6 +1013,12 @@ const docTemplate = `{
             "properties": {
                 "original_url": {
                     "type": "string"
+                },
+                "short_url": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
                 }
             }
         },

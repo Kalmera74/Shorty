@@ -8,9 +8,10 @@ import (
 	"gorm.io/gorm"
 )
 
-type IClickRepository interface {
+type IAnalyticsRepository interface {
 	GetAll(ctx context.Context) ([]ClickModel, error)
 	GetAllByShortUrl(ctx context.Context, shortUrl string) ([]ClickModel, error)
+	GetByID(ctx context.Context, id uint) (ClickModel, error)
 	Create(ctx context.Context, click ClickModel) (ClickModel, error)
 }
 
@@ -18,9 +19,10 @@ type postgresClickRepository struct {
 	db *gorm.DB
 }
 
-func NewAnalyticsRepository(db *gorm.DB) IClickRepository {
+func NewAnalyticsRepository(db *gorm.DB) IAnalyticsRepository {
 	return &postgresClickRepository{db}
 }
+
 func (p *postgresClickRepository) Create(ctx context.Context, click ClickModel) (ClickModel, error) {
 	if err := p.db.WithContext(ctx).Create(&click).Error; err != nil {
 		return ClickModel{}, fmt.Errorf("%w: %v", ErrClickCreateFail, err)
@@ -64,4 +66,19 @@ func (p *postgresClickRepository) GetAllByShortUrl(ctx context.Context, shortUrl
 	}
 
 	return clicks, nil
+}
+
+func (p *postgresClickRepository) GetByID(ctx context.Context, id uint) (ClickModel, error) {
+	var click ClickModel
+	if err := p.db.
+		WithContext(ctx).
+		Preload("Short").
+		First(&click, id).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ClickModel{}, fmt.Errorf("click with id %d not found: %w", id, ErrClickNotFound)
+		}
+		return ClickModel{}, fmt.Errorf("failed to fetch click with id %d: %w", id, err)
+	}
+	return click, nil
 }

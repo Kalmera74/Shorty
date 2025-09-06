@@ -33,7 +33,7 @@ func NewShortHandler(service IShortService, messaging messaging.IMessaging) *Sho
 // @Failure 404 {object} map[string]string
 // @Router /api/v1/shorts [get]
 func (h *ShortHandler) GetAll(c *fiber.Ctx) error {
-	shortModels, err := h.service.GetAllURLs(c.Context(), )
+	shortModels, err := h.service.GetAll(c.Context())
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -126,13 +126,13 @@ func (h *ShortHandler) GetByShortUrl(c *fiber.Ctx) error {
 }
 
 // Search godoc
-// @Summary Search for a shortened URL
-// @Description Search using filters (URL, etc.)
+// @Summary Search for shortened URLs
+// @Description Search using filters (URL, user ID, etc.)
 // @Tags shorts
 // @Accept json
 // @Produce json
 // @Param request body SearchRequest true "Search criteria"
-// @Success 200 {object} ShortenResponse
+// @Success 200 {array} ShortenResponse
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
@@ -145,18 +145,26 @@ func (h *ShortHandler) Search(c *fiber.Ctx) error {
 	if err := validate.Struct(req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
-	shortModel, err := h.service.Search(c.Context(), req)
+
+	shortModels, err := h.service.Search(c.Context(), req)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Short not found"})
 		}
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
-	return c.JSON(ShortenResponse{
-		Id:          uint(shortModel.ID),
-		OriginalUrl: shortModel.OriginalUrl,
-		ShortUrl:    shortModel.ShortUrl,
-	})
+
+	// Map slice of ShortModel to slice of ShortenResponse
+	responses := make([]ShortenResponse, 0, len(shortModels))
+	for _, sm := range shortModels {
+		responses = append(responses, ShortenResponse{
+			Id:          uint(sm.ID),
+			OriginalUrl: sm.OriginalUrl,
+			ShortUrl:    sm.ShortUrl,
+		})
+	}
+
+	return c.JSON(responses)
 }
 
 // RedirectToOriginalUrl godoc

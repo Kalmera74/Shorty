@@ -11,6 +11,17 @@ definitions:
           $ref: '#/definitions/analytics.Usage'
         type: array
     type: object
+  analytics.ClickEvent:
+    properties:
+      ip:
+        type: string
+      short_id:
+        type: integer
+      time_stamp:
+        type: string
+      user_agent:
+        type: string
+    type: object
   analytics.ClickModel:
     properties:
       created_at:
@@ -34,17 +45,6 @@ definitions:
     - short_id
     - user_agent
     type: object
-  analytics.ClickRecord:
-    properties:
-      clickTimes:
-        type: string
-      ipAddress:
-        type: string
-      shortID:
-        type: integer
-      userAgents:
-        type: string
-    type: object
   analytics.Usage:
     properties:
       clickTimes:
@@ -58,6 +58,10 @@ definitions:
     properties:
       original_url:
         type: string
+      short_url:
+        type: string
+      user_id:
+        type: integer
     type: object
   shortener.ShortModel:
     properties:
@@ -235,7 +239,7 @@ paths:
         name: click
         required: true
         schema:
-          $ref: '#/definitions/analytics.ClickRecord'
+          $ref: '#/definitions/analytics.ClickEvent'
       produces:
       - application/json
       responses:
@@ -255,7 +259,7 @@ paths:
             additionalProperties:
               type: string
             type: object
-      summary: Create a new click record
+      summary: CreateClick a new click record
       tags:
       - analytics
   /api/analytics/{shortUrl}:
@@ -295,6 +299,141 @@ paths:
       summary: Get analytics for a specific short URL
       tags:
       - analytics
+  /api/analytics/clicks:
+    get:
+      description: Returns all individual click records (not grouped)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/analytics.ClickModel'
+            type: array
+        "404":
+          description: No clicks found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to fetch clicks
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get all click records
+      tags:
+      - analytics
+  /api/analytics/clicks/{id}:
+    get:
+      description: Returns a single click record based on its ID
+      parameters:
+      - description: Click ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/analytics.ClickModel'
+        "400":
+          description: Invalid ID parameter
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Click not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to fetch click
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get a click record by ID
+      tags:
+      - analytics
+  /api/v1/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user with email and password, returns a JWT token
+      parameters:
+      - description: User login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/user.UserLoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: JWT token successfully generated
+          schema:
+            $ref: '#/definitions/user.UserLoginResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Invalid credentials
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Could not create token
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: User login
+      tags:
+      - auth
+  /api/v1/register:
+    get:
+      description: Fetch a user given their ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get a user by ID
+      tags:
+      - users
   /api/v1/shorts:
     get:
       description: Retrieve all shortened URLs
@@ -418,7 +557,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Search using filters (URL, etc.)
+      description: Search using filters (URL, user ID, etc.)
       parameters:
       - description: Search criteria
         in: body
@@ -432,7 +571,9 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/shortener.ShortenResponse'
+            items:
+              $ref: '#/definitions/shortener.ShortenResponse'
+            type: array
         "400":
           description: Bad Request
           schema:
@@ -451,7 +592,7 @@ paths:
             additionalProperties:
               type: string
             type: object
-      summary: Search for a shortened URL
+      summary: Search for shortened URLs
       tags:
       - shorts
   /api/v1/shorts/short/{url}:
@@ -559,36 +700,6 @@ paths:
       summary: Delete a user
       tags:
       - users
-    get:
-      description: Fetch a user given their ID
-      parameters:
-      - description: User ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/user.UserResponse'
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Get a user by ID
-      tags:
-      - users
     put:
       consumes:
       - application/json
@@ -657,44 +768,4 @@ paths:
       summary: Get all shorts for a specific user
       tags:
       - users
-  /api/v1/users/login:
-    post:
-      consumes:
-      - application/json
-      description: Authenticate user with email and password, returns a JWT token
-      parameters:
-      - description: User login credentials
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/user.UserLoginRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: JWT token successfully generated
-          schema:
-            $ref: '#/definitions/user.UserLoginResponse'
-        "400":
-          description: Invalid request body
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "401":
-          description: Invalid credentials
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Could not create token
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: User login
-      tags:
-      - auth
 swagger: "2.0"
