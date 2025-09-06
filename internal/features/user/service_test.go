@@ -76,7 +76,7 @@ func TestGetUser_NotFound(t *testing.T) {
 
 func TestCreateUser_Success(t *testing.T) {
 	mockRepo := new(MockUserRepository)
-	req := UserCreateRequest{
+	req := UserRegisterRequest{
 		UserName: "bob",
 		Email:    "bob@test.com",
 		Password: "secure123",

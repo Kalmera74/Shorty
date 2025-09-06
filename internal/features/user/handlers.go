@@ -42,7 +42,7 @@ func (h *UserHandler) GetAllUsers(c *fiber.Ctx) error {
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param user body UserCreateRequest true "User data"
+// @Param user body UserResponse true "User data"
 // @Success 201 {object} UserResponse
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
@@ -99,17 +99,18 @@ func (h *UserHandler) Login(c *fiber.Ctx) error {
 }
 
 // CreateUser godoc
-// @Summary Get a user by ID
-// @Description Fetch a user given their ID
-// @Tags users
-// @Produce json
-// @Param id path int true "User ID"
-// @Success 200 {object} UserResponse
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Router /api/v1/register [get]
+// @Summary      Register a new user
+// @Description  Creates a new user account
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        user body UserRegisterRequest true "User registration data"
+// @Success      201 {object} UserResponse
+// @Failure      400 {object} map[string]string "Invalid request"
+// @Failure      500 {object} map[string]string "Failed to create user"
+// @Router       /api/v1/register [post]
 func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
-	var createReq UserCreateRequest
+	var createReq UserRegisterRequest
 	if err := c.BodyParser(&createReq); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request"})
 	}

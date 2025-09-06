@@ -1,6 +1,6 @@
 package user
 
-type UserCreateRequest struct {
+type UserRegisterRequest struct {
 	UserName string `json:"user_name" validate:"required,min=3,max=10" `
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required,min=5,max=30" `

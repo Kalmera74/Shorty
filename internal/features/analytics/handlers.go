@@ -22,7 +22,7 @@ func NewAnalyticsHandler(service IAnalyticsService) *analyticsHandler {
 // @Success      200 {array} Analysis
 // @Failure      404 {object} map[string]string "No clicks found"
 // @Failure      500 {object} map[string]string "Failed to fetch analytics"
-// @Router       /api/analytics [get]
+// @Router       /api/v1/analytics [get]
 func (h *analyticsHandler) GetAllAnalytics(c *fiber.Ctx) error {
 	clickModels, err := h.service.GetAll(c.Context())
 	if err != nil {
@@ -77,7 +77,7 @@ func (h *analyticsHandler) GetAllAnalytics(c *fiber.Ctx) error {
 // @Success      201 {object} ClickModel
 // @Failure      400 {object} map[string]string "Invalid request body"
 // @Failure      500 {object} map[string]string "Failed to create click"
-// @Router       /api/analytics [post]
+// @Router       /api/v1/analytics [post]
 func (h *analyticsHandler) CreateClick(c *fiber.Ctx) error {
 	var record ClickEvent
 	if err := c.BodyParser(&record); err != nil {
@@ -115,7 +115,7 @@ func (h *analyticsHandler) CreateClick(c *fiber.Ctx) error {
 // @Failure      400 {object} map[string]string "Missing shortUrl parameter"
 // @Failure      404 {object} map[string]string "No clicks found for this short URL"
 // @Failure      500 {object} map[string]string "Failed to fetch clicks"
-// @Router       /api/analytics/{shortUrl} [get]
+// @Router       /api/v1/analytics/{shortUrl} [get]
 func (h *analyticsHandler) GetAllAnalyticsByShortUrl(c *fiber.Ctx) error {
 	shortUrl := c.Params("shortUrl")
 	if shortUrl == "" {
@@ -161,7 +161,7 @@ func (h *analyticsHandler) GetAllAnalyticsByShortUrl(c *fiber.Ctx) error {
 // @Success      200 {array} ClickModel
 // @Failure      404 {object} map[string]string "No clicks found"
 // @Failure      500 {object} map[string]string "Failed to fetch clicks"
-// @Router       /api/analytics/clicks [get]
+// @Router       /api/v1/clicks [get]
 func (h *analyticsHandler) GetAllClicks(c *fiber.Ctx) error {
 	clicks, err := h.service.GetAllClicks(c.Context())
 	if err != nil {
@@ -191,7 +191,7 @@ func (h *analyticsHandler) GetAllClicks(c *fiber.Ctx) error {
 // @Failure      400 {object} map[string]string "Invalid ID parameter"
 // @Failure      404 {object} map[string]string "Click not found"
 // @Failure      500 {object} map[string]string "Failed to fetch click"
-// @Router       /api/analytics/clicks/{id} [get]
+// @Router       /api/v1/clicks/{id} [get]
 func (h *analyticsHandler) GetClickById(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 	if err != nil || id <= 0 {

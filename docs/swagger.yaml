@@ -107,23 +107,6 @@ definitions:
       short_url:
         type: string
     type: object
-  user.UserCreateRequest:
-    properties:
-      email:
-        type: string
-      password:
-        maxLength: 30
-        minLength: 5
-        type: string
-      user_name:
-        maxLength: 10
-        minLength: 3
-        type: string
-    required:
-    - email
-    - password
-    - user_name
-    type: object
   user.UserLoginRequest:
     properties:
       email:
@@ -140,6 +123,23 @@ definitions:
     properties:
       token:
         type: string
+    type: object
+  user.UserRegisterRequest:
+    properties:
+      email:
+        type: string
+      password:
+        maxLength: 30
+        minLength: 5
+        type: string
+      user_name:
+        maxLength: 10
+        minLength: 3
+        type: string
+    required:
+    - email
+    - password
+    - user_name
     type: object
   user.UserResponse:
     properties:
@@ -202,7 +202,7 @@ paths:
       summary: Redirect to the original URL
       tags:
       - shorts
-  /api/analytics:
+  /api/v1/analytics:
     get:
       description: Returns all click analytics grouped by short URLs
       produces:
@@ -262,7 +262,7 @@ paths:
       summary: CreateClick a new click record
       tags:
       - analytics
-  /api/analytics/{shortUrl}:
+  /api/v1/analytics/{shortUrl}:
     get:
       description: Returns click analytics for the given short URL
       parameters:
@@ -299,7 +299,7 @@ paths:
       summary: Get analytics for a specific short URL
       tags:
       - analytics
-  /api/analytics/clicks:
+  /api/v1/clicks:
     get:
       description: Returns all individual click records (not grouped)
       produces:
@@ -326,7 +326,7 @@ paths:
       summary: Get all click records
       tags:
       - analytics
-  /api/analytics/clicks/{id}:
+  /api/v1/clicks/{id}:
     get:
       description: Returns a single click record based on its ID
       parameters:
@@ -404,36 +404,39 @@ paths:
       tags:
       - auth
   /api/v1/register:
-    get:
-      description: Fetch a user given their ID
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user account
       parameters:
-      - description: User ID
-        in: path
-        name: id
+      - description: User registration data
+        in: body
+        name: user
         required: true
-        type: integer
+        schema:
+          $ref: '#/definitions/user.UserRegisterRequest'
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
             $ref: '#/definitions/user.UserResponse'
         "400":
-          description: Bad Request
+          description: Invalid request
           schema:
             additionalProperties:
               type: string
             type: object
-        "404":
-          description: Not Found
+        "500":
+          description: Failed to create user
           schema:
             additionalProperties:
               type: string
             type: object
-      summary: Get a user by ID
+      summary: Register a new user
       tags:
-      - users
+      - auth
   /api/v1/shorts:
     get:
       description: Retrieve all shortened URLs
@@ -650,7 +653,7 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/user.UserCreateRequest'
+          $ref: '#/definitions/user.UserResponse'
       produces:
       - application/json
       responses:

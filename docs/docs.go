@@ -18,7 +18,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/analytics": {
+        "/api/v1/analytics": {
             "get": {
                 "description": "Returns all click analytics grouped by short URLs",
                 "produces": [
@@ -109,104 +109,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/analytics/clicks": {
-            "get": {
-                "description": "Returns all individual click records (not grouped)",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "analytics"
-                ],
-                "summary": "Get all click records",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/analytics.ClickModel"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "No clicks found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to fetch clicks",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/analytics/clicks/{id}": {
-            "get": {
-                "description": "Returns a single click record based on its ID",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "analytics"
-                ],
-                "summary": "Get a click record by ID",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Click ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/analytics.ClickModel"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid ID parameter",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Click not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to fetch click",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/analytics/{shortUrl}": {
+        "/api/v1/analytics/{shortUrl}": {
             "get": {
                 "description": "Returns click analytics for the given short URL",
                 "produces": [
@@ -252,6 +155,103 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Failed to fetch clicks",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/clicks": {
+            "get": {
+                "description": "Returns all individual click records (not grouped)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "analytics"
+                ],
+                "summary": "Get all click records",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/analytics.ClickModel"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No clicks found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to fetch clicks",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/clicks/{id}": {
+            "get": {
+                "description": "Returns a single click record based on its ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "analytics"
+                ],
+                "summary": "Get a click record by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Click ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/analytics.ClickModel"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID parameter",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Click not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to fetch click",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -324,33 +324,38 @@ const docTemplate = `{
             }
         },
         "/api/v1/register": {
-            "get": {
-                "description": "Fetch a user given their ID",
+            "post": {
+                "description": "Creates a new user account",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "users"
+                    "auth"
                 ],
-                "summary": "Get a user by ID",
+                "summary": "Register a new user",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "User ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
+                        "description": "User registration data",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user.UserRegisterRequest"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/user.UserResponse"
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Invalid request",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -358,8 +363,8 @@ const docTemplate = `{
                             }
                         }
                     },
-                    "404": {
-                        "description": "Not Found",
+                    "500": {
+                        "description": "Failed to create user",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -702,7 +707,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/user.UserCreateRequest"
+                            "$ref": "#/definitions/user.UserResponse"
                         }
                     }
                 ],
@@ -1087,29 +1092,6 @@ const docTemplate = `{
                 }
             }
         },
-        "user.UserCreateRequest": {
-            "type": "object",
-            "required": [
-                "email",
-                "password",
-                "user_name"
-            ],
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string",
-                    "maxLength": 30,
-                    "minLength": 5
-                },
-                "user_name": {
-                    "type": "string",
-                    "maxLength": 10,
-                    "minLength": 3
-                }
-            }
-        },
         "user.UserLoginRequest": {
             "type": "object",
             "required": [
@@ -1132,6 +1114,29 @@ const docTemplate = `{
             "properties": {
                 "token": {
                     "type": "string"
+                }
+            }
+        },
+        "user.UserRegisterRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "password",
+                "user_name"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string",
+                    "maxLength": 30,
+                    "minLength": 5
+                },
+                "user_name": {
+                    "type": "string",
+                    "maxLength": 10,
+                    "minLength": 3
                 }
             }
         },
