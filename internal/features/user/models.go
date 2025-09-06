@@ -15,5 +15,6 @@ type UserModel struct {
 	UserName     string                 `validate:"required,min=3,max=30"`
 	Email        string                 `validate:"required,email"`
 	PasswordHash string                 `validate:"required"`
+	Role         string                 `validate:"required"`
 	Shorts       []shortener.ShortModel `gorm:"foreignKey:UserID" validate:"dive"`
 }

@@ -109,7 +109,6 @@ func processMessages(ctx context.Context, msgs <-chan messaging.IMessage, servic
 			log.Info().
 				Uint("click_id", uint(click.ShortID)).
 				Str("ip", click.Ip).
-				Str("user_agent", click.UserAgent).
 				Msg("Processing click")
 
 			record := analytics.ClickModel{

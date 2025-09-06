@@ -66,6 +66,10 @@ func (r *postgresURLStore) Search(ctx context.Context, req SearchRequest) ([]Sho
 		return nil, err
 	}
 
+	if len(shorts) == 0 {
+		return nil, fmt.Errorf("%w", ErrShortNotFound)
+	}
+
 	return shorts, nil
 }
 func (s *postgresURLStore) GetAll(ctx context.Context) ([]ShortModel, error) {

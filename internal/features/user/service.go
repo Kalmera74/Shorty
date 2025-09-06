@@ -77,6 +77,7 @@ func (s *userService) CreateUser(ctx context.Context, req UserRegisterRequest) (
 		UserName:     req.UserName,
 		Email:        req.Email,
 		PasswordHash: hasPss,
+		Role:         "user",
 	}
 
 	createdUser, err := s.Repository.Add(ctx, newUser)

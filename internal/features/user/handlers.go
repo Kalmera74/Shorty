@@ -90,7 +90,7 @@ func (h *UserHandler) Login(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid credentials"})
 	}
 
-	signedToken, err := auth.GenerateJWTToken(user.ID, time.Now().Add(time.Hour*72).Unix())
+	signedToken, err := auth.GenerateJWTToken(user.ID, user.Role, time.Now().Add(time.Hour*72).Unix())
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not create token"})
 	}

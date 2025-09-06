@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/Kalmera74/Shorty/internal/features/analytics"
 	"github.com/Kalmera74/Shorty/internal/features/shortener"
 	"github.com/Kalmera74/Shorty/internal/features/user"
 	"gorm.io/driver/postgres"
@@ -34,6 +35,7 @@ func AutoMigrate(dbConn *gorm.DB) error {
 	models := []interface{}{
 		&user.UserModel{},
 		&shortener.ShortModel{},
+		&analytics.ClickModel{},
 	}
 
 	for _, model := range models {
