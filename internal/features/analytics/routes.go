@@ -7,7 +7,7 @@ func RegisterRoutes(app *fiber.App, handler *analyticsHandler) {
 
 	analytics := api.Group("/analytics")
 	analytics.Get("/", handler.GetAllAnalytics)
-	analytics.Get("/:shortUrl", handler.GetAllAnalyticsByShortUrl)
+	analytics.Get("/shorts/:shortUrl", handler.GetAllAnalyticsByShortUrl)
 
 	clicks := api.Group("/clicks")
 	clicks.Post("/", handler.CreateClick)

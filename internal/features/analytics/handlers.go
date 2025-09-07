@@ -158,7 +158,7 @@ func (h *analyticsHandler) GetAllAnalyticsByShortUrl(c *fiber.Ctx) error {
 // @Description  Returns all individual click records (not grouped)
 // @Tags         clicks
 // @Produce      json
-// @Success      200 {array} ClickModel
+// @Success      200 {array} ClickEvent
 // @Failure      404 {object} map[string]string "No clicks found"
 // @Failure      500 {object} map[string]string "Failed to fetch clicks"
 // @Router       /api/v1/clicks [get]
@@ -177,8 +177,17 @@ func (h *analyticsHandler) GetAllClicks(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).
 			JSON(fiber.Map{"error": "no clicks found"})
 	}
+	clickEvents := make([]ClickEvent, 0, len(clicks))
 
-	return c.JSON(clicks)
+	for _, click := range clicks {
+		clickEvents = append(clickEvents, ClickEvent{
+			ShortID:   click.ShortID,
+			Ip:        click.IpAddress,
+			UserAgent: click.UserAgent,
+			TimeStamp: click.CreatedAt,
+		})
+	}
+	return c.JSON(clickEvents)
 }
 
 // GetClickById godoc
@@ -187,7 +196,7 @@ func (h *analyticsHandler) GetAllClicks(c *fiber.Ctx) error {
 // @Tags         clicks
 // @Produce      json
 // @Param        id path int true "Click ID"
-// @Success      200 {object} ClickModel
+// @Success      200 {object} ClickEvent
 // @Failure      400 {object} map[string]string "Invalid ID parameter"
 // @Failure      404 {object} map[string]string "Click not found"
 // @Failure      500 {object} map[string]string "Failed to fetch click"
@@ -209,5 +218,12 @@ func (h *analyticsHandler) GetClickById(c *fiber.Ctx) error {
 			JSON(fiber.Map{"error": "failed to fetch click", "cause": err.Error()})
 	}
 
-	return c.JSON(click)
+	clickEvent := ClickEvent{
+		ShortID:   click.ShortID,
+		Ip:        click.IpAddress,
+		UserAgent: click.UserAgent,
+		TimeStamp: click.CreatedAt,
+	}
+
+	return c.JSON(clickEvent)
 }

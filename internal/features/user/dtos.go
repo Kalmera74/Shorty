@@ -1,5 +1,7 @@
 package user
 
+import "github.com/Kalmera74/Shorty/internal/features/shortener"
+
 type UserRegisterRequest struct {
 	UserName string `json:"user_name" validate:"required,min=3,max=10" `
 	Email    string `json:"email" validate:"required,email"`
@@ -21,7 +23,8 @@ type UserUpdateRequest struct {
 }
 
 type UserResponse struct {
-	Id       uint   `json:"id"`
-	UserName string `json:"user_name"`
-	Email    string `json:"email"`
+	Id       uint                      `json:"id"`
+	UserName string                    `json:"user_name"`
+	Email    string                    `json:"email"`
+	Shorts   []shortener.ShortResponse `json:"shorts"`
 }

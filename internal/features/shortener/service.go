@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/Kalmera74/Shorty/internal/types"
-	"github.com/Kalmera74/Shorty/pkg/caching"
+	"github.com/Kalmera74/Shorty/pkg/cache"
 	"gorm.io/gorm"
 )
 

@@ -3,6 +3,7 @@ package shortener
 import (
 	"encoding/json"
 	"errors"
+	"os"
 	"strconv"
 	"time"
 
@@ -29,7 +30,7 @@ func NewShortHandler(service IShortService, messaging messaging.IMessaging) *Sho
 // @Description Retrieve all shortened URLs
 // @Tags shorts
 // @Produce json
-// @Success 200 {array} ShortenResponse
+// @Success 200 {array} ShortResponse
 // @Failure 404 {object} map[string]string
 // @Router /api/v1/shorts [get]
 func (h *ShortHandler) GetAll(c *fiber.Ctx) error {
@@ -37,10 +38,10 @@ func (h *ShortHandler) GetAll(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 	}
-	shortResponses := []ShortenResponse{}
+	shortResponses := []ShortResponse{}
 	for _, shortModel := range shortModels {
-		shortResponses = append(shortResponses, ShortenResponse{
-			Id:          uint(shortModel.ID),
+		shortResponses = append(shortResponses, ShortResponse{
+			Id:          shortModel.ID,
 			OriginalUrl: shortModel.OriginalUrl,
 			ShortUrl:    shortModel.ShortUrl,
 		})
@@ -54,8 +55,8 @@ func (h *ShortHandler) GetAll(c *fiber.Ctx) error {
 // @Tags shorts
 // @Accept json
 // @Produce json
-// @Param request body ShortenRequest true "Shorten Request"
-// @Success 200 {object} ShortenResponse
+// @Param request body ShortenRequest true "ShortenRequest"
+// @Success 200 {object} ShortResponse
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /api/v1/shorts [post]
@@ -71,8 +72,8 @@ func (h *ShortHandler) Shorten(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
-	return c.JSON(ShortenResponse{
-		Id:          uint(short.ID),
+	return c.JSON(ShortResponse{
+		Id:          short.ID,
 		OriginalUrl: short.OriginalUrl,
 		ShortUrl:    short.ShortUrl,
 	})
@@ -83,7 +84,7 @@ func (h *ShortHandler) Shorten(c *fiber.Ctx) error {
 // @Tags shorts
 // @Produce json
 // @Param id path int true "Short ID"
-// @Success 200 {object} ShortenResponse
+// @Success 200 {object} ShortResponse
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Router /api/v1/shorts/{id} [get]
@@ -97,8 +98,8 @@ func (h *ShortHandler) GetById(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 	}
-	return c.JSON(ShortenResponse{
-		Id:          uint(shortModel.ID),
+	return c.JSON(ShortResponse{
+		Id:          shortModel.ID,
 		OriginalUrl: shortModel.OriginalUrl,
 		ShortUrl:    shortModel.ShortUrl,
 	})
@@ -109,7 +110,7 @@ func (h *ShortHandler) GetById(c *fiber.Ctx) error {
 // @Tags shorts
 // @Produce json
 // @Param url path string true "Short URL"
-// @Success 200 {object} ShortenResponse
+// @Success 200 {object} ShortResponse
 // @Failure 404 {object} map[string]string
 // @Router /api/v1/shorts/short/{url} [get]
 func (h *ShortHandler) GetByShortUrl(c *fiber.Ctx) error {
@@ -118,8 +119,8 @@ func (h *ShortHandler) GetByShortUrl(c *fiber.Ctx) error {
 	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Short not found"})
 	}
-	return c.JSON(ShortenResponse{
-		Id:          uint(shortModel.ID),
+	return c.JSON(ShortResponse{
+		Id:          shortModel.ID,
 		OriginalUrl: shortModel.OriginalUrl,
 		ShortUrl:    shortModel.ShortUrl,
 	})
@@ -132,7 +133,7 @@ func (h *ShortHandler) GetByShortUrl(c *fiber.Ctx) error {
 // @Accept json
 // @Produce json
 // @Param request body SearchRequest true "Search criteria"
-// @Success 200 {array} ShortenResponse
+// @Success 200 {array} ShortResponse
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
@@ -154,11 +155,10 @@ func (h *ShortHandler) Search(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	// Map slice of ShortModel to slice of ShortenResponse
-	responses := make([]ShortenResponse, 0, len(shortModels))
+	responses := make([]ShortResponse, 0, len(shortModels))
 	for _, sm := range shortModels {
-		responses = append(responses, ShortenResponse{
-			Id:          uint(sm.ID),
+		responses = append(responses, ShortResponse{
+			Id:          sm.ID,
 			OriginalUrl: sm.OriginalUrl,
 			ShortUrl:    sm.ShortUrl,
 		})
@@ -177,7 +177,6 @@ func (h *ShortHandler) Search(c *fiber.Ctx) error {
 // @Failure 500 {object} map[string]string
 // @Router /{url} [get]
 func (h *ShortHandler) RedirectToOriginalUrl(c *fiber.Ctx) error {
-
 	short := c.Params("url")
 	shortModel, err := h.service.GetByShortUrl(c.Context(), short)
 	if err != nil {
@@ -187,15 +186,25 @@ func (h *ShortHandler) RedirectToOriginalUrl(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
+	clickQue := os.Getenv("CLICK_QUEUE")
+	if clickQue == "" {
+		clickQue = "click_queue"
+	}
+
+	ip := c.IP()
+	ua := c.Get("User-Agent")
+	shortID := shortModel.ID
+	timeStamp := time.Now()
+
 	go func() {
 		event := map[string]any{
-			"short_id":   shortModel.ID,
-			"ip":         c.IP(),
-			"user_agent": c.Get("User-Agent"),
-			"time_stamp": time.Now(),
+			"short_id":   shortID,
+			"ip":         ip,
+			"user_agent": ua,
+			"time_stamp": timeStamp,
 		}
 		payload, _ := json.Marshal(event)
-		_ = h.messaging.Publish("clicks", payload)
+		_ = h.messaging.Publish(clickQue, payload)
 	}()
 
 	return c.Redirect(shortModel.OriginalUrl, fiber.StatusMovedPermanently)
@@ -206,7 +215,7 @@ func (h *ShortHandler) RedirectToOriginalUrl(c *fiber.Ctx) error {
 // @Tags users
 // @Produce json
 // @Param id path int true "User ID"
-// @Success 200 {array} ShortenResponse
+// @Success 200 {array} ShortResponse
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Router /api/v1/users/{id}/shorts [get]
@@ -220,10 +229,10 @@ func (h *ShortHandler) GetAllByUser(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 	}
-	shortResponses := []ShortenResponse{}
+	shortResponses := []ShortResponse{}
 	for _, shortModel := range shortModels {
-		shortResponses = append(shortResponses, ShortenResponse{
-			Id:          uint(shortModel.ID),
+		shortResponses = append(shortResponses, ShortResponse{
+			Id:          shortModel.ID,
 			OriginalUrl: shortModel.OriginalUrl,
 			ShortUrl:    shortModel.ShortUrl,
 		})

@@ -74,10 +74,23 @@ func consumeLoop(ctx context.Context, mq messaging.IMessaging, queue string, ser
 		default:
 		}
 
-		msgs, err := mq.Consume(queue, "analytics-worker", true)
+		msgs, err := mq.Consume(queue, "analytics-worker", false)
 		if err != nil {
-			log.Error().Err(err).Msg("Failed to start consumer, retrying in 5s")
+			log.Error().Err(err).Msg("Failed to start consumer, reconnecting RabbitMQ...")
+
 			time.Sleep(5 * time.Second)
+			newMq, err := messaging.NewRabbitMQConnection()
+			if err != nil {
+				log.Error().Err(err).Msg("Failed to reconnect RabbitMQ, retrying...")
+				continue
+			}
+			mq.Close()
+			mq = newMq
+
+			if err := mq.DeclareQueue(queue); err != nil {
+				log.Error().Err(err).Msg("Failed to declare queue after reconnect")
+				continue
+			}
 			continue
 		}
 

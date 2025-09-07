@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Kalmera74/Shorty/internal/features/shortener"
 	"github.com/Kalmera74/Shorty/internal/types"
 	"github.com/Kalmera74/Shorty/pkg/auth"
 	"github.com/go-playground/validator/v10"
@@ -33,7 +34,16 @@ func (h *UserHandler) GetAllUsers(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
-	return c.JSON(allUsers)
+
+	users := make([]UserResponse, 0, len(allUsers))
+	for _, user := range allUsers {
+		users = append(users, UserResponse{
+			Id:       uint(user.ID),
+			UserName: user.UserName,
+			Email:    user.Email,
+		})
+	}
+	return c.JSON(users)
 }
 
 // GetUser godoc
@@ -54,12 +64,30 @@ func (h *UserHandler) GetUser(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid user ID"})
 	}
 
-	userResp, err := h.service.GetUser(c.Context(), types.UserId(id))
+	userModel, err := h.service.GetUser(c.Context(), types.UserId(id))
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err})
 	}
 
-	return c.JSON(userResp)
+	var shortsResponse []shortener.ShortResponse
+	if len(userModel.Shorts) > 0 {
+		shortsResponse = make([]shortener.ShortResponse, 0, len(userModel.Shorts))
+		for _, shortModel := range userModel.Shorts {
+			shortsResponse = append(shortsResponse, shortener.ShortResponse{
+				Id:          shortModel.ID,
+				OriginalUrl: shortModel.OriginalUrl,
+				ShortUrl:    shortModel.ShortUrl,
+			})
+		}
+	}
+
+	userRespond := UserResponse{
+		Id:       uint(userModel.ID),
+		UserName: userModel.UserName,
+		Email:    userModel.Email,
+		Shorts:   shortsResponse,
+	}
+	return c.JSON(userRespond)
 }
 
 // Login godoc

@@ -21,7 +21,7 @@ func (m *MockUserRepository) GetAll(ctx context.Context) ([]UserModel, error) {
 	return args.Get(0).([]UserModel), args.Error(1)
 }
 
-func (m *MockUserRepository) Get(ctx context.Context, id uint) (UserModel, error) {
+func (m *MockUserRepository) Get(ctx context.Context, id types.UserId) (UserModel, error) {
 	args := m.Called(id)
 	return args.Get(0).(UserModel), args.Error(1)
 }
@@ -31,12 +31,12 @@ func (m *MockUserRepository) Add(ctx context.Context, u UserModel) (UserModel, e
 	return args.Get(0).(UserModel), args.Error(1)
 }
 
-func (m *MockUserRepository) Update(ctx context.Context, id uint, u UserModel) error {
+func (m *MockUserRepository) Update(ctx context.Context, id types.UserId, u UserModel) error {
 	args := m.Called(id, u)
 	return args.Error(0)
 }
 
-func (m *MockUserRepository) Delete(ctx context.Context, id uint) error {
+func (m *MockUserRepository) Delete(ctx context.Context, id types.UserId) error {
 	args := m.Called(id)
 	return args.Error(0)
 }

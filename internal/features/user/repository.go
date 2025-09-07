@@ -5,16 +5,17 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/Kalmera74/Shorty/internal/types"
 	"gorm.io/gorm"
 )
 
 type IUserRepository interface {
 	GetAll(ctx context.Context) ([]UserModel, error)
-	Get(ctx context.Context,id uint) (UserModel, error)
-	Add(ctx context.Context,user UserModel) (UserModel, error)
-	Update(ctx context.Context,id uint, user UserModel) error
-	Delete(ctx context.Context,id uint) error
-	GetByEmail(ctx context.Context,email string) (UserModel, error)
+	Get(ctx context.Context, id types.UserId) (UserModel, error)
+	Add(ctx context.Context, user UserModel) (UserModel, error)
+	Update(ctx context.Context, id types.UserId, user UserModel) error
+	Delete(ctx context.Context, id types.UserId) error
+	GetByEmail(ctx context.Context, email string) (UserModel, error)
 }
 
 type postgresUserRepository struct {
@@ -25,7 +26,7 @@ func NewUserRepository(db *gorm.DB) IUserRepository {
 	return &postgresUserRepository{db}
 }
 
-func (s *postgresUserRepository) GetAll(ctx context.Context,) ([]UserModel, error) {
+func (s *postgresUserRepository) GetAll(ctx context.Context) ([]UserModel, error) {
 	var users []UserModel
 	result := s.db.WithContext(ctx).Find(&users)
 
@@ -38,9 +39,9 @@ func (s *postgresUserRepository) GetAll(ctx context.Context,) ([]UserModel, erro
 
 	return users, nil
 }
-func (s *postgresUserRepository) Get(ctx context.Context,id uint) (UserModel, error) {
+func (s *postgresUserRepository) Get(ctx context.Context, id types.UserId) (UserModel, error) {
 	var u UserModel
-	result := s.db.WithContext(ctx).First(&u, id)
+	result := s.db.WithContext(ctx).Preload("Shorts").First(&u, id)
 
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return UserModel{}, fmt.Errorf("%w, %v", ErrUserNotFound, id)
@@ -51,7 +52,7 @@ func (s *postgresUserRepository) Get(ctx context.Context,id uint) (UserModel, er
 
 	return u, nil
 }
-func (s *postgresUserRepository) GetByEmail(ctx context.Context,email string) (UserModel, error) {
+func (s *postgresUserRepository) GetByEmail(ctx context.Context, email string) (UserModel, error) {
 
 	var user UserModel
 	result := s.db.WithContext(ctx).Where("email =?", email).First(&user)
@@ -63,7 +64,7 @@ func (s *postgresUserRepository) GetByEmail(ctx context.Context,email string) (U
 	return user, nil
 
 }
-func (s *postgresUserRepository) Add(ctx context.Context,u UserModel) (UserModel, error) {
+func (s *postgresUserRepository) Add(ctx context.Context, u UserModel) (UserModel, error) {
 	result := s.db.WithContext(ctx).Create(&u)
 
 	if result.Error != nil {
@@ -72,7 +73,7 @@ func (s *postgresUserRepository) Add(ctx context.Context,u UserModel) (UserModel
 
 	return u, nil
 }
-func (s *postgresUserRepository) Update(ctx context.Context,id uint, req UserModel) error {
+func (s *postgresUserRepository) Update(ctx context.Context, id types.UserId, req UserModel) error {
 	var existingUser UserModel
 
 	result := s.db.WithContext(ctx).First(&existingUser, id)
@@ -92,7 +93,7 @@ func (s *postgresUserRepository) Update(ctx context.Context,id uint, req UserMod
 
 	return nil
 }
-func (s *postgresUserRepository) Delete(ctx context.Context,id uint) error {
+func (s *postgresUserRepository) Delete(ctx context.Context, id types.UserId) error {
 	result := s.db.WithContext(ctx).Delete(&UserModel{}, id)
 
 	if result.RowsAffected == 0 {

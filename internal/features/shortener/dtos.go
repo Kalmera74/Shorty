@@ -7,8 +7,8 @@ type ShortenRequest struct {
 	Url            string       `json:"original_url" validate:"required,url"`
 	CustomShortUrl *string      `json:"custom_short_url,omitempty"`
 }
-type ShortenResponse struct {
-	Id          uint   `json:"id"`
+type ShortResponse struct {
+	Id          types.ShortId   `json:"id"`
 	OriginalUrl string `json:"original_url"`
 	ShortUrl    string `json:"short_url"`
 }

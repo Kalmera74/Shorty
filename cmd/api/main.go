@@ -5,10 +5,11 @@ import (
 	"time"
 
 	"github.com/Kalmera74/Shorty/internal/db"
+	"github.com/Kalmera74/Shorty/internal/features/analytics"
 	"github.com/Kalmera74/Shorty/internal/features/shortener"
 	"github.com/Kalmera74/Shorty/internal/features/user"
 	"github.com/Kalmera74/Shorty/pkg/auth"
-	"github.com/Kalmera74/Shorty/pkg/caching"
+	"github.com/Kalmera74/Shorty/pkg/cache"
 	"github.com/Kalmera74/Shorty/pkg/messaging"
 	"github.com/gofiber/contrib/fiberzerolog"
 	"github.com/gofiber/fiber/v2"
@@ -77,6 +78,11 @@ func main() {
 	shortService := shortener.NewShortService(shortStore, cacher)
 	shortHandler := shortener.NewShortHandler(shortService, mq)
 	shortener.RegisterRoutes(app, shortHandler)
+
+	analyticsStore := analytics.NewAnalyticsRepository(dbConn)
+	analyticsService := analytics.NewAnalyticService(analyticsStore)
+	analyticsHandler := analytics.NewAnalyticsHandler(analyticsService)
+	analytics.RegisterRoutes(app, analyticsHandler)
 
 	port := os.Getenv("PORT")
 	if port == "" {

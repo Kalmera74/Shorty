@@ -10,9 +10,9 @@ import (
 )
 
 type IUserService interface {
-	GetAllUsers(ctx context.Context) ([]UserResponse, error)
-	GetUser(ctx context.Context, id types.UserId) (UserResponse, error)
-	CreateUser(ctx context.Context, req UserRegisterRequest) (UserResponse, error)
+	GetAllUsers(ctx context.Context) ([]UserModel, error)
+	GetUser(ctx context.Context, id types.UserId) (UserModel, error)
+	CreateUser(ctx context.Context, req UserRegisterRequest) (UserModel, error)
 	UpdateUser(ctx context.Context, id types.UserId, req UserUpdateRequest) error
 	DeleteUser(ctx context.Context, id types.UserId) error
 	VerifyCredentials(ctx context.Context, email, password string) (*UserModel, error)
@@ -26,51 +26,43 @@ func NewUserService(s IUserRepository) IUserService {
 	return &userService{s}
 }
 
-func (s *userService) GetAllUsers(ctx context.Context) ([]UserResponse, error) {
+func (s *userService) GetAllUsers(ctx context.Context) ([]UserModel, error) {
 	userModels, err := s.Repository.GetAll(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("%w, %v", ErrUserNotFound, err)
 	}
 
-	users := make([]UserResponse, 0, len(userModels))
-	for _, user := range userModels {
-		users = append(users, UserResponse{
-			Id:       uint(user.ID),
-			UserName: user.UserName,
-			Email:    user.Email,
-		})
+	if len(userModels) == 0 {
+		return nil, fmt.Errorf("%w, %v", ErrUserNotFound, err)
 	}
 
-	return users, nil
+	return userModels, nil
 }
-func (s *userService) GetUser(ctx context.Context, id types.UserId) (UserResponse, error) {
+func (s *userService) GetUser(ctx context.Context, id types.UserId) (UserModel, error) {
 
-	userModel, err := s.Repository.Get(ctx, uint(id))
+	userModel, err := s.Repository.Get(ctx, id)
 	if err != nil {
 		if errors.Is(err, ErrUserNotFound) {
-			return UserResponse{}, err
+			return UserModel{}, err
 		}
-		return UserResponse{}, fmt.Errorf("Could not retrieve user %d. Reason: %v", id, err.Error())
+		return UserModel{}, fmt.Errorf("could not retrieve user %d: %w", id, err)
 	}
 
-	return UserResponse{
-		Id:       uint(userModel.ID),
-		UserName: userModel.UserName,
-		Email:    userModel.Email,
-	}, nil
+	return userModel, nil
 }
-func (s *userService) CreateUser(ctx context.Context, req UserRegisterRequest) (UserResponse, error) {
+
+func (s *userService) CreateUser(ctx context.Context, req UserRegisterRequest) (UserModel, error) {
 
 	existingUser, err := s.GetByEmail(ctx, req.Email)
 
 	if existingUser != nil {
-		return UserResponse{}, errors.New("The email is already in use")
+		return UserModel{}, errors.New("The email is already in use")
 	}
 
 	hasPss, err := security.HashPassword(req.Password)
 
 	if err != nil {
-		return UserResponse{}, err
+		return UserModel{}, err
 	}
 
 	newUser := UserModel{
@@ -82,18 +74,14 @@ func (s *userService) CreateUser(ctx context.Context, req UserRegisterRequest) (
 
 	createdUser, err := s.Repository.Add(ctx, newUser)
 	if err != nil {
-		return UserResponse{}, fmt.Errorf("Could not create user. Reason: %v", err.Error())
+		return UserModel{}, fmt.Errorf("Could not create user. Reason: %v", err.Error())
 	}
 
-	return UserResponse{
-		Id:       uint(createdUser.ID),
-		UserName: createdUser.UserName,
-		Email:    createdUser.Email,
-	}, nil
+	return createdUser, nil
 }
 func (s *userService) UpdateUser(ctx context.Context, id types.UserId, req UserUpdateRequest) error {
 
-	userModel, err := s.Repository.Get(ctx, uint(id))
+	userModel, err := s.Repository.Get(ctx, id)
 	if err != nil {
 		return fmt.Errorf("Could not retrieve user %d. Reason: %v", id, err.Error())
 	}
@@ -105,7 +93,7 @@ func (s *userService) UpdateUser(ctx context.Context, id types.UserId, req UserU
 		userModel.Email = *req.Email
 	}
 
-	err = s.Repository.Update(ctx, uint(id), userModel)
+	err = s.Repository.Update(ctx, id, userModel)
 	if err != nil {
 		return fmt.Errorf("Could not update user %d. Reason: %v", id, err.Error())
 	}
@@ -114,7 +102,7 @@ func (s *userService) UpdateUser(ctx context.Context, id types.UserId, req UserU
 }
 func (s *userService) DeleteUser(ctx context.Context, id types.UserId) error {
 
-	err := s.Repository.Delete(ctx, uint(id))
+	err := s.Repository.Delete(ctx, id)
 	if err != nil {
 		return fmt.Errorf("Could not delete user %d. Reason: %v", id, err.Error())
 	}
