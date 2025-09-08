@@ -122,6 +122,14 @@ func (h *UserHandler) Login(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not create token"})
 	}
+	c.Cookie(&fiber.Cookie{
+		Name:     "auth_token",
+		Value:    signedToken,
+		Expires:  time.Now().Add(72 * time.Hour),
+		HTTPOnly: true,
+		Secure:   true,
+		SameSite: "Strict",
+	})
 
 	return c.Status(fiber.StatusOK).JSON(UserLoginResponse{Token: signedToken})
 }
