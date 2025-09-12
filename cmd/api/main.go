@@ -13,6 +13,7 @@ import (
 	"github.com/Kalmera74/Shorty/pkg/messaging"
 	"github.com/gofiber/contrib/fiberzerolog"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -51,6 +52,11 @@ func main() {
 	}))
 
 	app.Get("/swagger/*", swagger.HandlerDefault)
+
+	app.Use(limiter.New(limiter.Config{
+		Max:        20,
+		Expiration: 30 * time.Second,
+	}))
 
 	auth.InitJwt()
 	cacher := caching.NewCacher()
