@@ -65,7 +65,7 @@ func TestGetAllUsers_Success(t *testing.T) {
 
 func TestGetUser_NotFound(t *testing.T) {
 	mockRepo := new(MockUserRepository)
-	mockRepo.On("Get", uint(99)).Return(UserModel{}, ErrUserNotFound)
+	mockRepo.On("Get", types.UserId(99)).Return(UserModel{}, ErrUserNotFound)
 
 	svc := NewUserService(mockRepo)
 

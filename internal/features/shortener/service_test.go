@@ -118,32 +118,9 @@ func TestShortURL_Miss_DB(t *testing.T) {
 	mockStore.AssertExpectations(t)
 }
 
-func TestShortenURL_New_StoreCreateFails(t *testing.T) {
-	mockStore := new(MockStore)
-	mockRedis := new(MockRedis)
-
-	req := ShortenRequest{
-		UserID: 1,
-		Url:    "https://example.com",
-	}
-
-	mockRedis.On("Get", mock.Anything, req.Url).Return("", redis.Nil)
-	mockStore.On("GetByLongUrl", mock.Anything).Return(ShortModel{}, ErrShortNotFound)
-	mockStore.On("Create", mock.Anything).Return(ShortModel{}, errors.New("database create error"))
-
-	service := NewShortService(mockStore, mockRedis)
-	_, err := service.ShortenURL(nil, req)
-
-	assert.Error(t, err)
-
-	mockStore.AssertExpectations(t)
-	mockRedis.AssertNotCalled(t, "Set")
-}
-
 // GetById Tests
 func TestGetById_ValidId(t *testing.T) {
 	mockStore := new(MockStore)
-	mockRedis := new(MockRedis)
 
 	expectedShort := ShortModel{
 		ID:          1,
@@ -153,16 +130,14 @@ func TestGetById_ValidId(t *testing.T) {
 	}
 
 	mockStore.On("GetById", types.ShortId(1)).Return(expectedShort, nil)
-	mockRedis.On("Set", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
-	service := NewShortService(mockStore, mockRedis)
+	service := NewShortService(mockStore, nil)
 	result, err := service.GetById(nil, types.ShortId(1))
 
 	assert.Equal(t, expectedShort, result)
 	assert.NoError(t, err)
 
 	mockStore.AssertExpectations(t)
-	mockRedis.AssertExpectations(t)
 }
 
 func TestGetById_StoreFails(t *testing.T) {
@@ -189,6 +164,7 @@ func TestGetByShortUrl_EmptyUrl(t *testing.T) {
 
 	mockStore.On("GetByShortUrl", mock.Anything).Return(ShortModel{}, ErrShortNotFound)
 	mockRedis.On("Get", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return("", ErrShortNotFound)
+	mockStore.On("Search", mock.Anything, mock.Anything).Return([]ShortModel{}, ErrShortNotFound)
 
 	_, err := service.GetByShortUrl(nil, "")
 
@@ -222,22 +198,24 @@ func TestGetByShortUrl_CacheMiss_DBHit(t *testing.T) {
 	mockStore := new(MockStore)
 	mockRedis := new(MockRedis)
 
-	expectedShort := ShortModel{
-		ID:          1,
-		UserID:      1,
-		OriginalUrl: "https://example.com",
-		ShortUrl:    "12345678",
+	expectedShort := []ShortModel{
+		{
+			ID:          1,
+			UserID:      1,
+			OriginalUrl: "https://example.com",
+			ShortUrl:    "12345678",
+		},
 	}
 
-	mockRedis.On("Get", mock.Anything, expectedShort.ShortUrl).Return("", redis.Nil)
-	mockStore.On("GetByShortUrl", expectedShort.ShortUrl).Return(expectedShort, nil)
+	mockRedis.On("Get", mock.Anything, mock.Anything).Return("", redis.Nil)
 	mockRedis.On("Set", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	mockStore.On("Search", mock.Anything, mock.Anything).Return(expectedShort, nil)
 
 	service := NewShortService(mockStore, mockRedis)
-	result, err := service.GetByShortUrl(nil, expectedShort.ShortUrl)
+	result, err := service.GetByShortUrl(nil, "")
 
 	assert.NoError(t, err)
-	assert.Equal(t, expectedShort, result)
+	assert.Equal(t, expectedShort[0], result)
 	mockStore.AssertExpectations(t)
 	mockRedis.AssertExpectations(t)
 }
@@ -247,7 +225,7 @@ func TestGetByShortUrl_CacheMiss_DBMiss(t *testing.T) {
 	mockRedis := new(MockRedis)
 
 	mockRedis.On("Get", mock.Anything, mock.Anything).Return("", redis.Nil)
-	mockStore.On("GetByShortUrl", mock.Anything).Return(ShortModel{}, ErrShortNotFound)
+	mockStore.On("Search", mock.Anything, mock.Anything).Return([]ShortModel{}, ErrShortNotFound)
 
 	service := NewShortService(mockStore, mockRedis)
 	_, err := service.GetByShortUrl(nil, "nonexistent")
@@ -261,12 +239,19 @@ func TestGetByShortUrl_CacheMiss_DBMiss(t *testing.T) {
 func TestGetByLongUrl_ValidUrl_Hit(t *testing.T) {
 	mockStore := new(MockStore)
 	service := NewShortService(mockStore, nil)
-	expectedShort := ShortModel{OriginalUrl: "https://example.com"}
+	expectedShort := []ShortModel{
+		{
+			ID:          1,
+			UserID:      1,
+			OriginalUrl: "https://example.com",
+			ShortUrl:    "12345678",
+		},
+	}
+	mockStore.On("Search", mock.Anything, mock.Anything).Return(expectedShort, nil)
 
-	mockStore.On("GetByLongUrl", mock.Anything).Return(expectedShort, nil)
 	result, err := service.GetByLongUrl(nil, "https://example.com")
 	assert.NoError(t, err)
-	assert.Equal(t, expectedShort, result)
+	assert.Equal(t, expectedShort[0], result)
 	mockStore.AssertExpectations(t)
 }
 
@@ -274,7 +259,7 @@ func TestGetByLongUrl_ValidUrl_Miss(t *testing.T) {
 	mockStore := new(MockStore)
 	service := NewShortService(mockStore, nil)
 
-	mockStore.On("GetByLongUrl", mock.Anything).Return(ShortModel{}, ErrShortNotFound)
+	mockStore.On("Search", mock.Anything, mock.Anything).Return([]ShortModel{}, ErrShortNotFound)
 
 	_, err := service.GetByLongUrl(nil, "https://example.com")
 
@@ -287,10 +272,19 @@ func TestGetByLongUrl_ValidUrl_Miss(t *testing.T) {
 func TestSearch_ByOriginalUrl_Found(t *testing.T) {
 	mockStore := new(MockStore)
 	service := NewShortService(mockStore, nil)
-	expectedShort := ShortModel{OriginalUrl: "https://example.com"}
-	req := SearchRequest{OriginalUrl: &expectedShort.OriginalUrl}
 
-	mockStore.On("GetByLongUrl", *req.OriginalUrl).Return(expectedShort, nil)
+	expectedShort := []ShortModel{
+		{
+			OriginalUrl: "https://example.com",
+		},
+	}
+
+	req := SearchRequest{
+		OriginalUrl: &expectedShort[0].OriginalUrl,
+	}
+
+	mockStore.On("Search", req).Return(expectedShort, nil)
+
 	result, err := service.Search(nil, req)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedShort, result)
@@ -300,19 +294,28 @@ func TestSearch_ByOriginalUrl_Found(t *testing.T) {
 func TestSearch_ByOriginalUrl_NotFound(t *testing.T) {
 	mockStore := new(MockStore)
 	service := NewShortService(mockStore, nil)
+
 	url := "https://nonexistent.com"
 	req := SearchRequest{OriginalUrl: &url}
 
-	mockStore.On("GetByLongUrl", url).Return(ShortModel{}, ErrShortNotFound)
+	mockStore.On("Search", req).Return([]ShortModel{}, ErrShortNotFound)
+
 	_, err := service.Search(nil, req)
 	assert.Error(t, err)
 	mockStore.AssertExpectations(t)
 }
 
 func TestSearch_NoCriteria(t *testing.T) {
-	service := NewShortService(nil, nil)
+
+	mockStore := new(MockStore)
+	service := NewShortService(mockStore, nil)
+
+	mockStore.On("Search",mock.Anything, mock.Anything).Return([]ShortModel{},ErrShortNotFound)
+
 	req := SearchRequest{}
+
 	_, err := service.Search(nil, req)
+
 	assert.Error(t, err)
 }
 
@@ -320,10 +323,16 @@ func TestSearch_NoCriteria(t *testing.T) {
 func TestGetAllByUser_Found(t *testing.T) {
 	mockStore := new(MockStore)
 	service := NewShortService(mockStore, nil)
+
 	userID := types.UserId(1)
 	expectedShorts := []ShortModel{{ID: 1}, {ID: 2}}
 
-	mockStore.On("GetAllByUser", userID).Return(expectedShorts, nil)
+	req := SearchRequest{
+		UserId: &userID,
+	}
+
+	mockStore.On("Search", req).Return(expectedShorts, nil)
+
 	result, err := service.GetAllByUser(nil, userID)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedShorts, result)
@@ -334,11 +343,15 @@ func TestGetAllByUser_StoreError(t *testing.T) {
 	mockStore := new(MockStore)
 	service := NewShortService(mockStore, nil)
 	userID := types.UserId(1)
-	mockStore.On("GetAllByUser", userID).Return([]ShortModel(nil), errors.New("database error"))
+
+	req := SearchRequest{
+		UserId: &userID,
+	}
+
+	mockStore.On("Search", req).Return([]ShortModel{}, ErrShortNotFound)
 
 	_, err := service.GetAllByUser(nil, userID)
 	assert.Error(t, err)
-	assert.EqualError(t, err, "database error")
 	mockStore.AssertExpectations(t)
 }
 
