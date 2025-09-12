@@ -3,6 +3,7 @@ package analytics
 import (
 	"errors"
 
+	"github.com/Kalmera74/Shorty/internal/types"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -208,7 +209,7 @@ func (h *analyticsHandler) GetClickById(c *fiber.Ctx) error {
 			JSON(fiber.Map{"error": "invalid ID parameter"})
 	}
 
-	click, err := h.service.GetByID(c.Context(), uint(id))
+	click, err := h.service.GetByID(c.Context(), types.ClickId(id))
 	if err != nil {
 		if errors.Is(err, ErrClickNotFound) {
 			return c.Status(fiber.StatusNotFound).

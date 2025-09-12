@@ -5,13 +5,14 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/Kalmera74/Shorty/internal/types"
 	"gorm.io/gorm"
 )
 
 type IAnalyticsRepository interface {
 	GetAll(ctx context.Context) ([]ClickModel, error)
 	GetAllByShortUrl(ctx context.Context, shortUrl string) ([]ClickModel, error)
-	GetByID(ctx context.Context, id uint) (ClickModel, error)
+	GetByID(ctx context.Context, id types.ClickId) (ClickModel, error)
 	Create(ctx context.Context, click ClickModel) (ClickModel, error)
 }
 
@@ -68,7 +69,7 @@ func (p *postgresClickRepository) GetAllByShortUrl(ctx context.Context, shortUrl
 	return clicks, nil
 }
 
-func (p *postgresClickRepository) GetByID(ctx context.Context, id uint) (ClickModel, error) {
+func (p *postgresClickRepository) GetByID(ctx context.Context, id types.ClickId) (ClickModel, error) {
 	var click ClickModel
 	if err := p.db.
 		WithContext(ctx).

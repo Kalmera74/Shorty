@@ -3,6 +3,8 @@ package analytics
 import (
 	"context"
 	"fmt"
+
+	"github.com/Kalmera74/Shorty/internal/types"
 )
 
 type IAnalyticsService interface {
@@ -10,7 +12,7 @@ type IAnalyticsService interface {
 	GetAllByShortUrl(ctx context.Context, shortUrl string) ([]ClickModel, error)
 	Create(ctx context.Context, click ClickModel) (ClickModel, error)
 	GetAllClicks(ctx context.Context) ([]ClickModel, error)
-	GetByID(ctx context.Context, id uint) (ClickModel, error)
+	GetByID(ctx context.Context, id types.ClickId) (ClickModel, error)
 }
 
 type analyticsService struct {
@@ -62,7 +64,7 @@ func (s *analyticsService) GetAllClicks(ctx context.Context) ([]ClickModel, erro
 	return clicks, nil
 }
 
-func (s *analyticsService) GetByID(ctx context.Context, id uint) (ClickModel, error) {
+func (s *analyticsService) GetByID(ctx context.Context, id types.ClickId) (ClickModel, error) {
 	click, err := s.Repository.GetByID(ctx, id)
 	if err != nil {
 		return ClickModel{}, err
