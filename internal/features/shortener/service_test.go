@@ -31,9 +31,9 @@ func (m *MockStore) Search(ctx context.Context, search SearchRequest) ([]ShortMo
 	args := m.Called(search)
 	return args.Get(0).([]ShortModel), args.Error(1)
 }
-func (m *MockStore) GetAll(ctx context.Context) ([]ShortModel, error) {
-	args := m.Called()
-	return args.Get(0).([]ShortModel), args.Error(1)
+func (m *MockStore) GetAll(ctx context.Context, offset, limit int) ([]ShortModel, int, error) {
+	args := m.Called(ctx, offset, limit)
+	return args.Get(0).([]ShortModel), args.Int(1), args.Error(2)
 }
 func (m *MockStore) Delete(ctx context.Context, id types.ShortId) error {
 	args := m.Called(id)
@@ -310,7 +310,7 @@ func TestSearch_NoCriteria(t *testing.T) {
 	mockStore := new(MockStore)
 	service := NewShortService(mockStore, nil)
 
-	mockStore.On("Search",mock.Anything, mock.Anything).Return([]ShortModel{},ErrShortNotFound)
+	mockStore.On("Search", mock.Anything, mock.Anything).Return([]ShortModel{}, ErrShortNotFound)
 
 	req := SearchRequest{}
 
@@ -361,8 +361,8 @@ func TestGetAllURLs_Found(t *testing.T) {
 	service := NewShortService(mockStore, nil)
 	expectedShorts := []ShortModel{{ID: 1}, {ID: 2}}
 
-	mockStore.On("GetAll").Return(expectedShorts, nil)
-	result, err := service.GetAll(nil)
+	mockStore.On("GetAll", mock.Anything, mock.Anything, mock.Anything).Return(expectedShorts, 1, nil)
+	result, _, err := service.GetAll(nil, 1, 1)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedShorts, result)
 	mockStore.AssertExpectations(t)
@@ -371,9 +371,9 @@ func TestGetAllURLs_Found(t *testing.T) {
 func TestGetAllURLs_StoreError(t *testing.T) {
 	mockStore := new(MockStore)
 	service := NewShortService(mockStore, nil)
-	mockStore.On("GetAll").Return([]ShortModel(nil), errors.New("database error"))
+	mockStore.On("GetAll", mock.Anything, mock.Anything, mock.Anything).Return([]ShortModel(nil), -1, errors.New("database error"))
 
-	_, err := service.GetAll(nil)
+	_, _, err := service.GetAll(nil, 1, 1)
 	assert.Error(t, err)
 	assert.EqualError(t, err, "database error")
 	mockStore.AssertExpectations(t)

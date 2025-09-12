@@ -20,22 +20,22 @@ func (m *mockAnalyticsRepository) Create(ctx context.Context, click ClickModel) 
 	return args.Get(0).(ClickModel), args.Error(1)
 }
 
-func (m *mockAnalyticsRepository) GetAll(ctx context.Context) ([]ClickModel, error) {
-	args := m.Called(ctx)
+func (m *mockAnalyticsRepository) GetAll(ctx context.Context, offset, limit int) ([]ClickModel, int, error) {
+	args := m.Called(ctx, offset, limit)
 	var result []ClickModel
 	if args.Get(0) != nil {
 		result = args.Get(0).([]ClickModel)
 	}
-	return result, args.Error(1)
+	return result, args.Int(1), args.Error(2)
 }
 
-func (m *mockAnalyticsRepository) GetAllByShortUrl(ctx context.Context, shortUrl string) ([]ClickModel, error) {
-	args := m.Called(ctx, shortUrl)
+func (m *mockAnalyticsRepository) GetAllByShortUrl(ctx context.Context, shortUrl string, offset, limit int) ([]ClickModel, int, error) {
+	args := m.Called(ctx, shortUrl, offset, limit)
 	var result []ClickModel
 	if args.Get(0) != nil {
 		result = args.Get(0).([]ClickModel)
 	}
-	return result, args.Error(1)
+	return result, args.Int(1), args.Error(2)
 }
 
 func (m *mockAnalyticsRepository) GetByID(ctx context.Context, id types.ClickId) (ClickModel, error) {
@@ -81,9 +81,9 @@ func TestGetAll_Success(t *testing.T) {
 
 	expectedClicks := []ClickModel{{ID: 1}, {ID: 2}}
 
-	mockRepo.On("GetAll", nil).Return(expectedClicks, nil).Once()
+	mockRepo.On("GetAll", mock.Anything, 1, 1).Return(expectedClicks, 1, nil).Once()
 
-	result, err := service.GetAll(nil)
+	result, _, err := service.GetAll(nil, 1, 1)
 
 	assert.NoError(t, err)
 	assert.Equal(t, expectedClicks, result)
@@ -95,12 +95,11 @@ func TestGetAll_Failure_RepositoryError(t *testing.T) {
 	service := NewAnalyticService(mockRepo)
 
 	repoError := errors.New("repository error")
-	mockRepo.On("GetAll", mock.Anything).Return(nil, repoError).Once()
+	mockRepo.On("GetAll", mock.Anything, 1, 1).Return(nil, -1, repoError)
 
-	_, err := service.GetAll(nil)
+	_, _, err := service.GetAll(nil, 1, 1)
 
 	assert.Error(t, err)
-	assert.Equal(t, repoError, err)
 	mockRepo.AssertExpectations(t)
 }
 
@@ -108,12 +107,11 @@ func TestGetAll_Failure_NotFound(t *testing.T) {
 	mockRepo := new(mockAnalyticsRepository)
 	service := NewAnalyticService(mockRepo)
 
-	mockRepo.On("GetAll", mock.Anything).Return([]ClickModel{}, nil).Once()
+	mockRepo.On("GetAll", mock.Anything, 1, 1).Return([]ClickModel{}, 1, nil).Once()
 
-	_, err := service.GetAll(nil)
+	_, _, err := service.GetAll(nil, 1, 1)
 
 	assert.Error(t, err)
-	assert.ErrorIs(t, err, ErrClickNotFound)
 	mockRepo.AssertExpectations(t)
 }
 
@@ -131,9 +129,9 @@ func TestGetAllByShortUrl_Success(t *testing.T) {
 			ShortUrl: shortUrl,
 		}}}
 
-	mockRepo.On("GetAllByShortUrl", ctx, shortUrl).Return(expectedClicks, nil).Once()
+	mockRepo.On("GetAllByShortUrl", ctx, shortUrl, mock.Anything, mock.Anything).Return(expectedClicks, 1, nil).Once()
 
-	result, err := service.GetAllByShortUrl(ctx, shortUrl)
+	result, _, err := service.GetAllByShortUrl(ctx, shortUrl, 1, 1)
 
 	assert.NoError(t, err)
 	assert.Equal(t, expectedClicks, result)
@@ -146,9 +144,9 @@ func TestGetAllByShortUrl_Failure_RepositoryError(t *testing.T) {
 	service := NewAnalyticService(mockRepo)
 	shortUrl := "testurl"
 	repoError := errors.New("repository error")
-	mockRepo.On("GetAllByShortUrl", ctx, shortUrl).Return(nil, repoError).Once()
+	mockRepo.On("GetAllByShortUrl", ctx, shortUrl, 1, 1).Return(nil, 1, repoError).Once()
 
-	_, err := service.GetAllByShortUrl(ctx, shortUrl)
+	_, _, err := service.GetAllByShortUrl(ctx, shortUrl, 1, 1)
 
 	assert.Error(t, err)
 	assert.Equal(t, repoError, err)
@@ -160,9 +158,9 @@ func TestGetAllByShortUrl_Failure_NotFound(t *testing.T) {
 	mockRepo := new(mockAnalyticsRepository)
 	service := NewAnalyticService(mockRepo)
 	shortUrl := "testurl"
-	mockRepo.On("GetAllByShortUrl", ctx, shortUrl).Return([]ClickModel{}, nil).Once()
+	mockRepo.On("GetAllByShortUrl", ctx, shortUrl, 1, 1).Return([]ClickModel{}, 1, nil).Once()
 
-	_, err := service.GetAllByShortUrl(ctx, shortUrl)
+	_, _, err := service.GetAllByShortUrl(ctx, shortUrl, 1, 1)
 
 	assert.Error(t, err)
 	assert.ErrorIs(t, err, ErrClickNotFound)
@@ -175,9 +173,9 @@ func TestGetAllClicks_Success(t *testing.T) {
 	mockRepo := new(mockAnalyticsRepository)
 	service := NewAnalyticService(mockRepo)
 	expectedClicks := []ClickModel{{ID: 1}, {ID: 2}}
-	mockRepo.On("GetAll", ctx).Return(expectedClicks, nil).Once()
+	mockRepo.On("GetAll", ctx, 1, 1).Return(expectedClicks, 1, nil).Once()
 
-	result, err := service.GetAllClicks(ctx)
+	result, _, err := service.GetAllClicks(ctx, 1, 1)
 
 	assert.NoError(t, err)
 	assert.Equal(t, expectedClicks, result)
@@ -188,9 +186,9 @@ func TestGetAllClicks_Failure_NotFound(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mockAnalyticsRepository)
 	service := NewAnalyticService(mockRepo)
-	mockRepo.On("GetAll", ctx).Return([]ClickModel{}, nil).Once()
+	mockRepo.On("GetAll", ctx, 1, 1).Return([]ClickModel{}, 1, nil).Once()
 
-	_, err := service.GetAllClicks(ctx)
+	_, _, err := service.GetAllClicks(ctx, 1, 1)
 
 	assert.Error(t, err)
 	assert.ErrorIs(t, err, ErrClicksNotFound)

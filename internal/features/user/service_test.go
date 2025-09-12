@@ -16,9 +16,9 @@ type MockUserRepository struct {
 	mock.Mock
 }
 
-func (m *MockUserRepository) GetAll(ctx context.Context) ([]UserModel, error) {
+func (m *MockUserRepository) GetAll(ctx context.Context, offset, limit int) ([]UserModel, int, error) {
 	args := m.Called()
-	return args.Get(0).([]UserModel), args.Error(1)
+	return args.Get(0).([]UserModel), args.Int(1), args.Error(2)
 }
 
 func (m *MockUserRepository) Get(ctx context.Context, id types.UserId) (UserModel, error) {
@@ -51,11 +51,11 @@ func TestGetAllUsers_Success(t *testing.T) {
 	mockRepo := new(MockUserRepository)
 	mockRepo.On("GetAll").Return([]UserModel{
 		{ID: 1, UserName: "alice", Email: "alice@test.com"},
-	}, nil)
+	}, 1, nil)
 
 	svc := NewUserService(mockRepo)
 
-	users, err := svc.GetAllUsers(context.Background())
+	users, _, err := svc.GetAllUsers(nil, 1, 1)
 
 	assert.NoError(t, err)
 	assert.Len(t, users, 1)

@@ -8,10 +8,10 @@ import (
 )
 
 type IAnalyticsService interface {
-	GetAll(ctx context.Context) ([]ClickModel, error)
-	GetAllByShortUrl(ctx context.Context, shortUrl string) ([]ClickModel, error)
+	GetAll(ctx context.Context, offset, limit int) ([]ClickModel, int, error)
+	GetAllByShortUrl(ctx context.Context, shortUrl string, offset, limit int) ([]ClickModel, int, error)
 	Create(ctx context.Context, click ClickModel) (ClickModel, error)
-	GetAllClicks(ctx context.Context) ([]ClickModel, error)
+	GetAllClicks(ctx context.Context, offset, limit int) ([]ClickModel, int, error)
 	GetByID(ctx context.Context, id types.ClickId) (ClickModel, error)
 }
 
@@ -31,37 +31,37 @@ func (s *analyticsService) Create(ctx context.Context, click ClickModel) (ClickM
 	return createdClick, nil
 }
 
-func (s *analyticsService) GetAll(ctx context.Context) ([]ClickModel, error) {
-	clicks, err := s.Repository.GetAll(ctx)
+func (s *analyticsService) GetAll(ctx context.Context, offset, limit int) ([]ClickModel, int, error) {
+	clicks, total, err := s.Repository.GetAll(ctx, offset, limit)
 	if err != nil {
-		return nil, err
+		return nil, 0, fmt.Errorf("could not retrieve clicks: %w", err)
 	}
 	if len(clicks) == 0 {
-		return nil, ErrClickNotFound
+		return nil, 0, ErrClicksNotFound
 	}
-	return clicks, nil
+	return clicks, total, nil
 }
 
-func (s *analyticsService) GetAllByShortUrl(ctx context.Context, shortUrl string) ([]ClickModel, error) {
-	clicks, err := s.Repository.GetAllByShortUrl(ctx, shortUrl)
+func (s *analyticsService) GetAllByShortUrl(ctx context.Context, shortUrl string, offset, limit int) ([]ClickModel, int, error) {
+	clicks, total, err := s.Repository.GetAllByShortUrl(ctx, shortUrl, offset, limit)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	if len(clicks) == 0 {
-		return nil, fmt.Errorf("%w: no clicks found for short url %s", ErrClickNotFound, shortUrl)
+		return nil, 0, fmt.Errorf("%w: no clicks found for short url %s", ErrClickNotFound, shortUrl)
 	}
-	return clicks, nil
+	return clicks, total, nil
 }
 
-func (s *analyticsService) GetAllClicks(ctx context.Context) ([]ClickModel, error) {
-	clicks, err := s.Repository.GetAll(ctx)
+func (s *analyticsService) GetAllClicks(ctx context.Context, offset, limit int) ([]ClickModel, int, error) {
+	clicks, total, err := s.Repository.GetAll(ctx, offset, limit)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	if len(clicks) == 0 {
-		return nil, ErrClicksNotFound
+		return nil, 0, ErrClicksNotFound
 	}
-	return clicks, nil
+	return clicks, total, nil
 }
 
 func (s *analyticsService) GetByID(ctx context.Context, id types.ClickId) (ClickModel, error) {

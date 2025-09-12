@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/Kalmera74/Shorty/internal/types"
-	"github.com/Kalmera74/Shorty/pkg/cache"
+	caching "github.com/Kalmera74/Shorty/pkg/cache"
 	"gorm.io/gorm"
 )
 
@@ -21,7 +21,7 @@ type IShortService interface {
 	GetByLongUrl(ctx context.Context, originalUrl string) (ShortModel, error)
 	Search(ctx context.Context, req SearchRequest) ([]ShortModel, error)
 	GetAllByUser(ctx context.Context, userID types.UserId) ([]ShortModel, error)
-	GetAll(ctx context.Context) ([]ShortModel, error)
+	GetAll(ctx context.Context, page, pageSize int) ([]ShortModel, int, error)
 	DeleteURL(ctx context.Context, shortID types.ShortId) error
 }
 type shortService struct {
@@ -146,13 +146,15 @@ func (s *shortService) GetAllByUser(ctx context.Context, userID types.UserId) ([
 
 	return result, nil
 }
-func (s *shortService) GetAll(ctx context.Context) ([]ShortModel, error) {
-	allShorts, err := s.Repository.GetAll(ctx)
+func (s *shortService) GetAll(ctx context.Context, page, pageSize int) ([]ShortModel, int, error) {
+	offset := (page - 1) * pageSize
+	shorts, total, err := s.Repository.GetAll(ctx, offset, pageSize)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return allShorts, nil
+	return shorts, total, nil
 }
+
 func (s *shortService) DeleteURL(ctx context.Context, shortID types.ShortId) error {
 
 	short, err := s.GetById(ctx, shortID)

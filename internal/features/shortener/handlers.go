@@ -26,18 +26,33 @@ func NewShortHandler(service IShortService, messaging messaging.IMessaging) *Sho
 }
 
 // GetAll godoc
-// @Summary Get all shortened URLs
-// @Description Retrieve all shortened URLs
+// @Summary Get all shortened URLs (with pagination)
+// @Description Retrieve shortened URLs with pagination
 // @Tags shorts
 // @Produce json
-// @Success 200 {array} ShortResponse
+// @Param page query int false "Page number" default(1)
+// @Param pageSize query int false "Number of items per page" default(10)
+// @Success 200 {object} PaginatedResponse
 // @Failure 404 {object} map[string]string
 // @Router /api/v1/shorts [get]
 func (h *ShortHandler) GetAll(c *fiber.Ctx) error {
-	shortModels, err := h.service.GetAll(c.Context())
+	// Parse query params
+	page := c.QueryInt("page", 1)        // default = 1
+	pageSize := c.QueryInt("pageSize", 10) // default = 10
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 10 // prevent abuse
+	}
+
+	// Call service with pagination
+	shortModels, total, err := h.service.GetAll(c.Context(), page, pageSize)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 	}
+
+	// Map to response DTOs
 	shortResponses := []ShortResponse{}
 	for _, shortModel := range shortModels {
 		shortResponses = append(shortResponses, ShortResponse{
@@ -46,7 +61,15 @@ func (h *ShortHandler) GetAll(c *fiber.Ctx) error {
 			ShortUrl:    shortModel.ShortUrl,
 		})
 	}
-	return c.JSON(shortResponses)
+
+	// Return paginated response
+	return c.JSON(PaginatedResponse{
+		Page:       page,
+		PageSize:   pageSize,
+		Total:      total,
+		TotalPages: (total + pageSize - 1) / pageSize,
+		Data:       shortResponses,
+	})
 }
 
 // Shorten godoc

@@ -10,7 +10,7 @@ import (
 )
 
 type IUserRepository interface {
-	GetAll(ctx context.Context) ([]UserModel, error)
+	GetAll(ctx context.Context, offset, limit int) ([]UserModel, int, error)
 	Get(ctx context.Context, id types.UserId) (UserModel, error)
 	Add(ctx context.Context, user UserModel) (UserModel, error)
 	Update(ctx context.Context, id types.UserId, user UserModel) error
@@ -26,19 +26,29 @@ func NewUserRepository(db *gorm.DB) IUserRepository {
 	return &postgresUserRepository{db}
 }
 
-func (s *postgresUserRepository) GetAll(ctx context.Context) ([]UserModel, error) {
+func (s *postgresUserRepository) GetAll(ctx context.Context, offset, limit int) ([]UserModel, int, error) {
 	var users []UserModel
-	result := s.db.WithContext(ctx).Find(&users)
+	var total int64
 
-	if result.Error != nil {
-		return nil, fmt.Errorf("could not retrieve users. Reason: %v", result.Error)
+	if err := s.db.WithContext(ctx).Model(&UserModel{}).Count(&total).Error; err != nil {
+		return nil, -1, fmt.Errorf("%w: %v", ErrUserNotFound, err)
 	}
+
+	if err := s.db.WithContext(ctx).
+		Order("id DESC").
+		Offset(offset).
+		Limit(limit).
+		Find(&users).Error; err != nil {
+		return nil, -1, fmt.Errorf("%w: %v", ErrUserNotFound, err)
+	}
+
 	if len(users) == 0 {
-		return nil, fmt.Errorf("%w, %v", ErrUserNotFound, "no users in database")
+		return nil, -1, fmt.Errorf("%w", ErrUserNotFound)
 	}
 
-	return users, nil
+	return users, int(total), nil
 }
+
 func (s *postgresUserRepository) Get(ctx context.Context, id types.UserId) (UserModel, error) {
 	var u UserModel
 	result := s.db.WithContext(ctx).Preload("Shorts").First(&u, id)
@@ -58,7 +68,7 @@ func (s *postgresUserRepository) GetByEmail(ctx context.Context, email string) (
 	result := s.db.WithContext(ctx).Where("email =?", email).First(&user)
 
 	if result.Error != nil {
-		return UserModel{}, result.Error
+		return UserModel{}, fmt.Errorf("%w: %v", ErrUserNotFound, result.Error)
 	}
 
 	return user, nil

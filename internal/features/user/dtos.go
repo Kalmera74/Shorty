@@ -28,3 +28,10 @@ type UserResponse struct {
 	Email    string                    `json:"email"`
 	Shorts   []shortener.ShortResponse `json:"shorts"`
 }
+type PaginatedUsersResponse struct {
+	Page       int            `json:"page"`
+	PageSize   int            `json:"pageSize"`
+	Total      int            `json:"total"`
+	TotalPages int            `json:"totalPages"`
+	Data       []UserResponse `json:"data"`
+}

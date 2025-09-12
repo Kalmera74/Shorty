@@ -22,19 +22,31 @@ func NewUserHandler(service IUserService) *UserHandler {
 }
 
 // GetAllUsers godoc
-// @Summary List all users
-// @Description Get all registered users
+// @Summary List all users with pagination
+// @Description Get all registered users (paginated)
 // @Tags users
 // @Produce json
-// @Success 200 {array} UserResponse
+// @Param page query int false "Page number" default(1)
+// @Param pageSize query int false "Number of items per page" default(10)
+// @Success 200 {object} PaginatedUsersResponse
 // @Failure 500 {object} map[string]string
 // @Router /api/v1/users [get]
 func (h *UserHandler) GetAllUsers(c *fiber.Ctx) error {
-	allUsers, err := h.service.GetAllUsers(c.Context())
+	page := c.QueryInt("page", 1)
+	pageSize := c.QueryInt("pageSize", 10)
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 10
+	}
+
+	allUsers, total, err := h.service.GetAllUsers(c.Context(), page, pageSize)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
+	// Map to response DTO
 	users := make([]UserResponse, 0, len(allUsers))
 	for _, user := range allUsers {
 		users = append(users, UserResponse{
@@ -43,7 +55,15 @@ func (h *UserHandler) GetAllUsers(c *fiber.Ctx) error {
 			Email:    user.Email,
 		})
 	}
-	return c.JSON(users)
+
+	// Build paginated response
+	return c.JSON(PaginatedUsersResponse{
+		Page:       page,
+		PageSize:   pageSize,
+		Total:      total,
+		TotalPages: (total + pageSize - 1) / pageSize,
+		Data:       users,
+	})
 }
 
 // GetUser godoc

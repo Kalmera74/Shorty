@@ -13,7 +13,7 @@ type IShortRepository interface {
 	Create(ctx context.Context, short ShortModel) (ShortModel, error)
 	GetById(ctx context.Context, id types.ShortId) (ShortModel, error)
 	Search(ctx context.Context, req SearchRequest) ([]ShortModel, error)
-	GetAll(ctx context.Context) ([]ShortModel, error)
+	GetAll(ctx context.Context, offset, limit int) ([]ShortModel, int, error)
 	Delete(ctx context.Context, shortenID types.ShortId) error
 }
 
@@ -72,17 +72,29 @@ func (r *postgresURLStore) Search(ctx context.Context, req SearchRequest) ([]Sho
 
 	return shorts, nil
 }
-func (s *postgresURLStore) GetAll(ctx context.Context) ([]ShortModel, error) {
-	var urls []ShortModel
-	result := s.db.Find(&urls)
-	if result.Error != nil {
-		return nil, fmt.Errorf("%w: %v", ErrShortenFailed, result.Error)
+func (r *postgresURLStore) GetAll(ctx context.Context, offset, limit int) ([]ShortModel, int, error) {
+	var shorts []ShortModel
+	var total int64
+
+	if err := r.db.WithContext(ctx).Model(&ShortModel{}).Count(&total).Error; err != nil {
+		return nil, 0, fmt.Errorf("%w: %v", ErrShortNotFound, err)
 	}
-	if len(urls) == 0 {
-		return nil, fmt.Errorf("%w: no URLs found", ErrShortNotFound)
+
+	if err := r.db.WithContext(ctx).
+		Order("id DESC").
+		Offset(offset).
+		Limit(limit).
+		Find(&shorts).Error; err != nil {
+		return nil, 0, fmt.Errorf("%w: %v", ErrShortNotFound, err)
 	}
-	return urls, nil
+
+	if len(shorts) == 0 {
+		return nil, -1, fmt.Errorf("%w", ErrShortNotFound)
+	}
+
+	return shorts, int(total), nil
 }
+
 func (s *postgresURLStore) Delete(ctx context.Context, shortId types.ShortId) error {
 	result := s.db.Find(shortId).Delete(&ShortModel{})
 

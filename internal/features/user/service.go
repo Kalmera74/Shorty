@@ -10,7 +10,7 @@ import (
 )
 
 type IUserService interface {
-	GetAllUsers(ctx context.Context) ([]UserModel, error)
+	GetAllUsers(ctx context.Context, page, pageSize int) ([]UserModel, int, error)
 	GetUser(ctx context.Context, id types.UserId) (UserModel, error)
 	CreateUser(ctx context.Context, req UserRegisterRequest) (UserModel, error)
 	UpdateUser(ctx context.Context, id types.UserId, req UserUpdateRequest) error
@@ -26,18 +26,16 @@ func NewUserService(s IUserRepository) IUserService {
 	return &userService{s}
 }
 
-func (s *userService) GetAllUsers(ctx context.Context) ([]UserModel, error) {
-	userModels, err := s.Repository.GetAll(ctx)
+func (s *userService) GetAllUsers(ctx context.Context, page, pageSize int) ([]UserModel, int, error) {
+	offset := (page - 1) * pageSize
+	users, total, err := s.Repository.GetAll(ctx, offset, pageSize)
 	if err != nil {
-		return nil, fmt.Errorf("%w, %v", ErrUserNotFound, err)
+		return nil, 0, fmt.Errorf("%w, %v", ErrUserNotFound, err)
 	}
 
-	if len(userModels) == 0 {
-		return nil, fmt.Errorf("%w, %v", ErrUserNotFound, err)
-	}
-
-	return userModels, nil
+	return users, total, nil
 }
+
 func (s *userService) GetUser(ctx context.Context, id types.UserId) (UserModel, error) {
 
 	userModel, err := s.Repository.Get(ctx, id)
